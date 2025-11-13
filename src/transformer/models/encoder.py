@@ -10,22 +10,23 @@ class EncoderLayer(nn.Module):
     Transformer Encoder layer, consisting of:
         1. Multi-head self-attention
         2. Residual connection + LayerNorm
-        3. Position-wise feed-forward network
+        3. Position-wise feed-forward network + Dropout
         4. Residual connection + LayerNorm
     
     Args:
         d_model (int): Embedding dimensionality of the model
         h (int): Number of attention heads
+        dropout (float): Dropout probability
     
     Returns:
         src (Tensor): The updated encoder hidden states of shape (B, T_enc, d_model)
     """
-    def __init__(self, d_model: int, h: int):
+    def __init__(self, d_model: int, num_heads: int, dropout: float=0.1):
         super().__init__()
         # ----------
         # Self-Attention
         # ----------
-        self.self_attn = SelfAttention(d_model, h)
+        self.self_attn = SelfAttention(d_model, num_heads, dropout)
         # ----------
         # LayerNorms
         # ----------
@@ -34,14 +35,20 @@ class EncoderLayer(nn.Module):
         # ----------
         # Feed-Forward Network
         # ----------
-        self.ffn = FeedForwardNetwork(d_model)
+        self.ffn = FeedForwardNetwork(d_model, dropout)
+        # ----------
+        # Dropout
+        # ----------
+        self.self_attn_drop = nn.Dropout(dropout)
+        self.ffn_drop = nn.Dropout(dropout)
 
     def forward(self, src: torch.Tensor):
         # ----------
-        # Self-Attention
+        # Self-Attention + Dropout
         # ----------
         residual = src   # store residual
         src = self.self_attn(src)
+        src = self.self_attn_drop(src)
         # ----------
         # Add Residual + LayerNorm
         # ----------
@@ -49,9 +56,10 @@ class EncoderLayer(nn.Module):
         src = self.norm1(src)
         residual = src   # store residual
         # ----------
-        # Feed-Forward Network
+        # Feed-Forward Network + Dropout
         # ----------
         src = self.ffn(src)
+        src = self.ffn_drop(src)
         # ----------
         # Add Residual + LayerNorm
         # ----------

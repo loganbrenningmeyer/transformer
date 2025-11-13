@@ -11,18 +11,25 @@ class SelfAttention(nn.Module):
     
     Args:
         d_model (int): Embedding dimensionality of the model
-        h (int): Number of attention heads
+        num_heads (int): Number of attention heads
+        dropout (float): Dropout probability
         is_causal (bool): Use masked self-attention if True
     
     Returns:
         O (Tensor): Self-attention output of shape (B, T, d_model)
     """
-    def __init__(self, d_model: int, h: int, is_causal: bool=False):
+    def __init__(
+            self, 
+            d_model: int, 
+            num_heads: int, 
+            dropout: float=0.1,
+            is_causal: bool=False,
+    ):
         super().__init__()
 
         self.d_model = d_model
-        self.d_h = d_model // h
-        self.h = h
+        self.d_h = d_model // num_heads
+        self.h = num_heads
         self.is_causal = is_causal
 
         # ----------
@@ -33,6 +40,11 @@ class SelfAttention(nn.Module):
         self.W_k = nn.Linear(d_model, d_model)
         self.W_v = nn.Linear(d_model, d_model)
         self.W_o = nn.Linear(d_model, d_model)
+
+        # ----------
+        # Dropout
+        # ----------
+        self.attn_dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # ----------
@@ -69,10 +81,11 @@ class SelfAttention(nn.Module):
             S = S.masked_fill(mask, float('-inf'))
 
         # ----------
-        # Perform row-wise softmax to compute attention weights
+        # Perform row-wise softmax to compute attention weights + Dropout
         # => A^{(i)} = \text{softmax}_\text{row}(S^{(i)}) \in \mathcal{R}^{B \times T \times T}
         # ----------
         A = torch.softmax(S, dim=-1)    # (B, h, T, T)
+        A = self.attn_dropout(A)
 
         # ----------
         # Apply attention weights to values to get outputs
@@ -104,17 +117,17 @@ class CrossAttention(nn.Module):
     
     Args:
         d_model (int): Embedding dimensionality of the model
-        h (int): Number of attention heads
+        num_heads (int): Number of attention heads
     
     Returns:
         O (Tensor): Cross-attention output of shape (B, T_dec, d_model)
     """
-    def __init__(self, d_model: int, h: int):
+    def __init__(self, d_model: int, num_heads: int, dropout: float=0.1):
         super().__init__()
 
         self.d_model = d_model
-        self.d_h = d_model // h
-        self.h = h
+        self.d_h = d_model // num_heads
+        self.h = num_heads
 
         # ----------
         # Query, Key, Value, and Output Projections
@@ -124,6 +137,11 @@ class CrossAttention(nn.Module):
         self.W_k = nn.Linear(d_model, d_model)
         self.W_v = nn.Linear(d_model, d_model)
         self.W_o = nn.Linear(d_model, d_model)
+
+        # ----------
+        # Dropout
+        # ----------
+        self.attn_dropout = nn.Dropout(dropout)
 
     def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
@@ -159,6 +177,7 @@ class CrossAttention(nn.Module):
         # => A^{(i)} = \text{softmax}_\text{row}(S^{(i)}) \in \mathcal{R}^{B \times T_\text{dec} \times T_\text{enc}}
         # ----------
         A = torch.softmax(S, dim=-1)    # (B, h, T_dec, T_enc)
+        A = self.attn_dropout(A)
 
         # ----------
         # Apply attention weights to values to get outputs
