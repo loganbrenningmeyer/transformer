@@ -5,8 +5,8 @@ import torch.nn as nn
 
 class SelfAttention(nn.Module):
     """
-    Performs multi-head self-attention on the batch of input
-    sequences x of shape (B, T, d_model). Allows masked self-attention
+    Applies multi-head self-attention on the batch of input
+    sequences x of shape (B, T, d_model). Performs masked self-attention
     if is_causal = True.
     
     Args:
@@ -22,7 +22,7 @@ class SelfAttention(nn.Module):
             self, 
             d_model: int, 
             num_heads: int, 
-            dropout: float=0.1,
+            dropout: float,
             is_causal: bool=False,
     ):
         super().__init__()
@@ -111,7 +111,7 @@ class SelfAttention(nn.Module):
 
 class CrossAttention(nn.Module):
     """
-    Performs multi-head cross-attention between the batch of query 
+    Applies multi-head cross-attention between the batch of query 
     inputs tgt of shape (B, T_dec, d_model) from the decoder and 
     context inputs memory of shape (B, T_enc, d_model) from the encoder output.
     

@@ -35,6 +35,7 @@ class Transformer(nn.Module):
         # ----------
         self.encoder = Encoder(d_model, num_heads, num_encoder_layers, dropout)
         self.decoder = Decoder(d_model, num_heads, num_decoder_layers, dropout)
+
         # ----------
         # Output Projection
         # ----------
@@ -46,10 +47,12 @@ class Transformer(nn.Module):
         # Encoder
         # ----------
         memory = self.encoder(src)        # (B, T_enc, d_model)
+
         # ----------
         # Decoder
         # ----------
         H = self.decoder(tgt, memory)     # (B, T_dec, d_model)
+        
         # ----------
         # Output Projection
         # => W_\text{out} \in \mathcal{R}^{d_\text{model} \times V}

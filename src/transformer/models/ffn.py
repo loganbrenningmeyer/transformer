@@ -13,7 +13,7 @@ class FeedForwardNetwork(nn.Module):
     Returns:
         x (Tensor): Output of position-wise feed-forward network of shape (B, T, d_model)
     """
-    def __init__(self, d_model: int, dropout: float=0.1):
+    def __init__(self, d_model: int, dropout: float):
         super().__init__()
         self.fc1 = nn.Linear(d_model, 4*d_model)
         self.fc2 = nn.Linear(4*d_model, d_model)

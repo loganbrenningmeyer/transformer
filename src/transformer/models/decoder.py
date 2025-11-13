@@ -23,26 +23,30 @@ class DecoderLayer(nn.Module):
     Returns:
         tgt (Tensor): The updated decoder hidden states of shape (B, T_dec, d_model)
     """
-    def __init__(self, d_model: int, num_heads: int, dropout: float=0.1):
+    def __init__(self, d_model: int, num_heads: int, dropout: float):
         super().__init__()
         # ----------
         # Masked Self-Attention
         # ----------
         self.self_attn = SelfAttention(d_model, num_heads, dropout, is_causal=True)
+
         # ----------
         # LayerNorms
         # ----------
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
+
         # ----------
         # Encoder Memory Cross-Attention
         # ----------
         self.cross_attn = CrossAttention(d_model, num_heads, dropout)
+
         # ----------
         # Position-Wise Feed-Forward Network
         # ----------
         self.ffn = FeedForwardNetwork(d_model, dropout)
+
         # ----------
         # Dropout
         # ----------
@@ -57,28 +61,33 @@ class DecoderLayer(nn.Module):
         residual = tgt   # store residual
         tgt = self.self_attn(tgt)
         tgt = self.self_attn_drop(tgt)
+
         # ----------
         # Add Residual + LayerNorm
         # ----------
         tgt += residual
         tgt = self.norm1(tgt)
         residual = tgt   # store residual
+
         # ----------
         # Encoder Memory Cross-Attention + Dropout
         # ----------
         tgt = self.cross_attn(tgt, memory)
         tgt = self.cross_attn_drop(tgt)
+
         # ----------
         # Add Residual + LayerNorm
         # ----------
         tgt += residual
         tgt = self.norm2(tgt)
         residual = tgt
+
         # ----------
         # Feed-Forward Network + Dropout
         # ----------
         tgt = self.ffn(tgt)
         tgt = self.ffn_drop(tgt)
+        
         # ----------
         # Add Residual + LayerNorm
         # ----------
@@ -103,7 +112,7 @@ class Decoder(nn.Module):
             d_model: int,
             num_heads: int,
             num_layers: int,
-            dropout: float=0.1
+            dropout: float
     ):
         super().__init__()
         # ----------
@@ -116,6 +125,9 @@ class Decoder(nn.Module):
         self.norm = nn.LayerNorm(d_model)
         
     def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+        # ----------
+        # Compute Hidden States
+        # ----------
         for layer in self.layers:
             tgt = layer(tgt, memory)
         tgt = self.norm(tgt)

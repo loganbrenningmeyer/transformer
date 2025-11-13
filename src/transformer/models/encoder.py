@@ -21,21 +21,24 @@ class EncoderLayer(nn.Module):
     Returns:
         src (Tensor): The updated encoder hidden states of shape (B, T_enc, d_model)
     """
-    def __init__(self, d_model: int, num_heads: int, dropout: float=0.1):
+    def __init__(self, d_model: int, num_heads: int, dropout: float):
         super().__init__()
         # ----------
         # Self-Attention
         # ----------
         self.self_attn = SelfAttention(d_model, num_heads, dropout)
+
         # ----------
         # LayerNorms
         # ----------
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
+
         # ----------
         # Feed-Forward Network
         # ----------
         self.ffn = FeedForwardNetwork(d_model, dropout)
+
         # ----------
         # Dropout
         # ----------
@@ -49,17 +52,20 @@ class EncoderLayer(nn.Module):
         residual = src   # store residual
         src = self.self_attn(src)
         src = self.self_attn_drop(src)
+
         # ----------
         # Add Residual + LayerNorm
         # ----------
         src += residual
         src = self.norm1(src)
         residual = src   # store residual
+
         # ----------
         # Feed-Forward Network + Dropout
         # ----------
         src = self.ffn(src)
         src = self.ffn_drop(src)
+        
         # ----------
         # Add Residual + LayerNorm
         # ----------
@@ -84,7 +90,7 @@ class Encoder(nn.Module):
             d_model: int, 
             num_heads: int, 
             num_layers: int,
-            dropout: float=0.1
+            dropout: float
     ):
         super().__init__()
         # ----------
@@ -97,6 +103,9 @@ class Encoder(nn.Module):
         self.norm = nn.LayerNorm(d_model)
         
     def forward(self, src: torch.Tensor) -> torch.Tensor:
+        # ----------
+        # Compute Encoder Memory
+        # ----------
         for layer in self.layers:
             src = layer(src)
         src = self.norm(src)

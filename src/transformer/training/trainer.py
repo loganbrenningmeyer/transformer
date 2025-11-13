@@ -6,10 +6,31 @@ from omegaconf import DictConfig
 import wandb
 from tqdm import tqdm
 
+from transformer.models.transformer import Transformer
+
 
 class Trainer:
-    def __init__(self):
-        pass
+    """
+    
+    
+    Args:
+    
+    
+    Returns:
+    
+    """
+    def __init__(
+            self,
+            model: Transformer,
+            optimizer: Optimizer,
+            dataloader: DataLoader,
+            device: torch.device,
+            train_config: DictConfig
+    ):
+        self.model = model
+        self.optimizer = optimizer
+        self.dataloader = dataloader
+        self.device = device
 
     def train(self, epochs: int):
         """
