@@ -50,7 +50,7 @@ class DecoderLayer(nn.Module):
         self.cross_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, tgt: torch.Tensor, memory: torch.Tensor):
+    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
         # Masked Self-Attention + Dropout
         # ----------
@@ -84,5 +84,40 @@ class DecoderLayer(nn.Module):
         # ----------
         tgt += residual
         tgt = self.norm3(tgt)
+
+        return tgt
+
+
+class Decoder(nn.Module):
+    """
+    
+    
+    Args:
+    
+    
+    Returns:
+    
+    """
+    def __init__(
+            self,
+            d_model: int,
+            num_heads: int,
+            num_layers: int,
+            dropout: float=0.1
+    ):
+        super().__init__()
+        # ----------
+        # DecoderLayers / LayerNorm
+        # ----------
+        self.layers = nn.ModuleList([
+            DecoderLayer(d_model, num_heads, dropout)
+            for _ in range(num_layers)
+        ])
+        self.norm = nn.LayerNorm(d_model)
+        
+    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+        for layer in self.layers:
+            tgt = layer(tgt, memory)
+        tgt = self.norm(tgt)
 
         return tgt

@@ -20,7 +20,7 @@ class FeedForwardNetwork(nn.Module):
         self.act = nn.GELU()
         self.drop = nn.Dropout(dropout)
 
-    def forward(self, x: torch.Tensor):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)

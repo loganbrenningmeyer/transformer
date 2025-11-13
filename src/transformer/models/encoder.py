@@ -42,7 +42,7 @@ class EncoderLayer(nn.Module):
         self.self_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, src: torch.Tensor):
+    def forward(self, src: torch.Tensor) -> torch.Tensor:
         # ----------
         # Self-Attention + Dropout
         # ----------
@@ -65,5 +65,40 @@ class EncoderLayer(nn.Module):
         # ----------
         src += residual
         src = self.norm2(src)
+
+        return src
+    
+
+class Encoder(nn.Module):
+    """
+    
+    
+    Args:
+    
+    
+    Returns:
+    
+    """
+    def __init__(
+            self, 
+            d_model: int, 
+            num_heads: int, 
+            num_layers: int,
+            dropout: float=0.1
+    ):
+        super().__init__()
+        # ----------
+        # EncoderLayers / LayerNorm
+        # ----------
+        self.layers = nn.ModuleList([
+            EncoderLayer(d_model, num_heads, dropout)
+            for _ in range(num_layers)
+        ])
+        self.norm = nn.LayerNorm(d_model)
+        
+    def forward(self, src: torch.Tensor) -> torch.Tensor:
+        for layer in self.layers:
+            src = layer(src)
+        src = self.norm(src)
 
         return src
