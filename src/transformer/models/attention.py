@@ -6,21 +6,24 @@ import torch.nn as nn
 class SelfAttention(nn.Module):
     """
     Performs multi-head self-attention on the batch of input
-    sequences x of shape (B, T, d_model)
+    sequences x of shape (B, T, d_model). Allows masked self-attention
+    if is_causal = True.
     
     Args:
         d_model (int): Embedding dimensionality of the model
         h (int): Number of attention heads
+        is_causal (bool): Use masked self-attention if True
     
     Returns:
         O (Tensor): Self-attention output of shape (B, T, d_model)
     """
-    def __init__(self, d_model: int, h: int):
+    def __init__(self, d_model: int, h: int, is_causal: bool=False):
         super().__init__()
 
         self.d_model = d_model
         self.d_h = d_model // h
         self.h = h
+        self.is_causal = is_causal
 
         # ----------
         # Query, Key, Value, and Output Projections
@@ -59,6 +62,13 @@ class SelfAttention(nn.Module):
         S = Q @ K_T / math.sqrt(self.d_h)       # (B, h, T, T)
 
         # ----------
+        # Masked Self-Attention
+        # ----------
+        if self.is_causal:
+            mask = torch.triu(torch.ones((1, 1, T, T), dtype=torch.bool, device=S.device), diagonal=1)    # True: Mask out, False: Keep
+            S = S.masked_fill(mask, float('-inf'))
+
+        # ----------
         # Perform row-wise softmax to compute attention weights
         # => A^{(i)} = \text{softmax}_\text{row}(S^{(i)}) \in \mathcal{R}^{B \times T \times T}
         # ----------
@@ -89,8 +99,8 @@ class SelfAttention(nn.Module):
 class CrossAttention(nn.Module):
     """
     Performs multi-head cross-attention between the batch of query 
-    inputs x_dec of shape (B, T_dec, d_model) from the decoder and 
-    context inputs x_enc of shape (B, T_enc, d_model) from the encoder.
+    inputs tgt of shape (B, T_dec, d_model) from the decoder and 
+    context inputs memory of shape (B, T_enc, d_model) from the encoder output.
     
     Args:
         d_model (int): Embedding dimensionality of the model
@@ -115,23 +125,23 @@ class CrossAttention(nn.Module):
         self.W_v = nn.Linear(d_model, d_model)
         self.W_o = nn.Linear(d_model, d_model)
 
-    def forward(self, x_dec: torch.Tensor, x_enc: torch.Tensor) -> torch.Tensor:
+    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
         # Compute Queries, Keys, and Values
         # => x_\text{dec} \in \mathcal{R}^{B \times T_\text{dec} \times d_\text{model}},\quad x_\text{enc} \in \mathcal{R}^{B \times T_\text{enc} \times d_\text{model}}
         # => Q = x_\text{dec}W_Q \in \mathcal{R}^{B \times T_\text{dec} \times d_\text{model}}
         # => K = x_\text{enc}W_K, V = x_\text{enc}W_V \in \mathcal{R}^{B \times T_\text{enc} \times d_\text{model}}
         # ----------
-        Q: torch.Tensor = self.W_q(x_dec)    # (B, T_dec, d_model)
-        K: torch.Tensor = self.W_k(x_enc)    # (B, T_enc, d_model)
-        V: torch.Tensor = self.W_v(x_enc)    # (B, T_enc, d_model)
+        Q: torch.Tensor = self.W_q(tgt)     # (B, T_dec, d_model)
+        K: torch.Tensor = self.W_k(memory)  # (B, T_enc, d_model)
+        V: torch.Tensor = self.W_v(memory)  # (B, T_enc, d_model)
 
         # ----------
         # Split into heads
         # => Q^{(i)} \in \mathcal{R}^{B \times T_\text{dec} \times d_h},\quad K^{(i)},V^{(i)} \in \mathcal{R}^{B \times T_\text{enc} \times d_h}
         # ----------
-        B, T_dec, _ = x_dec.shape
-        T_enc = x_enc.shape[1]
+        B, T_dec, _ = tgt.shape
+        T_enc = memory.shape[1]
 
         Q = Q.view(B, T_dec, self.h, self.d_h).transpose(1, 2)    # (B, h, T_dec, d_h)
         K = K.view(B, T_enc, self.h, self.d_h).transpose(1, 2)    # (B, h, T_enc, d_h)
@@ -170,6 +180,3 @@ class CrossAttention(nn.Module):
         O = self.W_o(Y)     # (B, T_dec, d_model)
 
         return O
-
-
-

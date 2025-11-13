@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from transformer.models.encoder import Encoder
-from transformer.models.decoder import Decoder
+from transformer.models.encoder import EncoderLayer
+from transformer.models.decoder import DecoderLayer
 from transformer.utils.position import sinusoidal_encoding
 
 
