@@ -1,29 +1,29 @@
 import math
 import torch
 
-def sinusoidal_embedding(t: torch.Tensor, dim: int) -> torch.Tensor:
+def sinusoidal_encoding(p: torch.Tensor, d_model: int) -> torch.Tensor:
     """
-    Computes sinusoidal time embeddings for t timesteps with dim dimensionality.
+    Computes sinusoidal positional encodings for sequence positions p with d_model encoding dimensionality.
     
     Args:
-        t (Tensor): Tensor of shape (B,) containing integer timesteps
-        dim (int): Dimensionality of the time embedding
+        p (Tensor): Tensor of shape (B,) containing integer positions
+        d_model (int): Dimensionality of the positional encoding
     
     Returns:
-        t_emb (Tensor): Tensor of shape (B, dim) containing sinusoidal time embeddings
+        pos_enc (Tensor): Tensor of shape (B, dim) containing sinusoidal positional encodings
     """
-    half_dim = dim // 2
+    half_dim = d_model // 2
     # ----------
-    # => k = 0,1,2,\ldots,\frac{d}{2}-1
+    # => k = 0,1,2,\ldots,\frac{d_\text{model}}{2}-1
     # ----------
-    k_vals = torch.arange(half_dim, device=t.device)
+    k_vals = torch.arange(half_dim, device=p.device)
     # ----------
-    # => \omega_k t = \frac{t}{10000^{2k/d}} = \exp(-2k/d \cdot \ln(10000))
+    # => \omega_k p = \frac{p}{10000^{2k/d_\text{model}}} = \exp(-2k/d_\text{model} \cdot \ln(10000))
     # ----------
-    freqs = torch.exp(-2*k_vals/dim * math.log(10000))  # (dim/2,)
-    freqs = freqs[None, :] * t[:, None].float()         # (B, dim/2)
+    freqs = torch.exp(-2*k_vals/d_model * math.log(10000))              # (d_model/2,)
+    freqs = freqs[None, :] * p[:, None].float()                         # (B, d_model/2)
     # ----------
-    # => \text{PE}(t) = \{\sin(\omega_0 t),\sin(\omega_1 t),\ldots,\sin(\omega_{d/2-1}t),\cos(\omega_0 t),\cos(\omega_1 t),\ldots,\cos(\omega_{d/2-1}t)\}
+    # => \text{PE}(p) = \{\sin(\omega_0 p),\sin(\omega_1 p),\ldots,\sin(\omega_{d_\text{model}/2-1}p),\cos(\omega_0 p),\cos(\omega_1 p),\ldots,\cos(\omega_{d_\text{model}/2-1}p)\}
     # ----------
-    t_emb = torch.cat([torch.sin(freqs), torch.cos(freqs)], dim=1)  # (B, dim)
-    return t_emb
+    pos_enc = torch.cat([torch.sin(freqs), torch.cos(freqs)], dim=1)  # (B, d_model)
+    return pos_enc
