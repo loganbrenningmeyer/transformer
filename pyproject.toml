@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transformer"
+version = "0.1.0"
+description = "From-scratch implementation of a vanilla transformer."
+readme = "README.md"
+license = "MIT"
+
+dependencies = [
+    "numpy",
+    "tqdm",
+    "torch",
+    "torchvision",
+    "omegaconf",
+    "wandb"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

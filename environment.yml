@@ -1,0 +1,14 @@
+name: transformer
+channels: 
+  - conda-forge
+  - defaults
+  
+dependencies:
+  - python=3.10
+  - pip
+  - setuptools
+  - wheel
+  - pyyaml
+
+  - pip:
+    - -e .
