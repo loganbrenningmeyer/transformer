@@ -1,2 +1,4 @@
 set -ex
-python -m transformer.train --config configs/default.yml
+
+CONFIG=$1
+python -m transformer.train --config "$CONFIG"

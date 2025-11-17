@@ -1,2 +1,4 @@
 set -ex
-python -m transformer.test --config configs/default.yml
+
+CONFIG=$1
+python -m transformer.test --config "$CONFIG"

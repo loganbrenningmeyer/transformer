@@ -12,8 +12,6 @@ license = "MIT"
 dependencies = [
     "numpy",
     "tqdm",
-    "torch",
-    "torchvision",
     "omegaconf",
     "wandb"
 ]
