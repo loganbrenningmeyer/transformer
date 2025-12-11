@@ -1,0 +1,16 @@
+run:
+  name: test
+  runs_dir: ./runs
+train:
+  steps: 1
+  lr: 0.0001
+model:
+  d_model: 512
+  num_heads: 4
+  num_encoder_layers: 2
+  num_decoder_layers: 2
+  dropout: 0.1
+data:
+  vocab_size: 1000
+  block_size: 256
+  data_dir: ./datasets/tiny_shakespeare
