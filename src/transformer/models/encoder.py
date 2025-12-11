@@ -19,7 +19,7 @@ class EncoderLayer(nn.Module):
         dropout (float): Dropout probability
     
     Returns:
-        src (Tensor): The updated encoder hidden states of shape (B, T_enc, d_model)
+        source (Tensor): The updated encoder hidden states of shape (B, T_enc, d_model)
     """
     def __init__(self, d_model: int, num_heads: int, dropout: float):
         super().__init__()
@@ -45,34 +45,34 @@ class EncoderLayer(nn.Module):
         self.self_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, src: torch.Tensor) -> torch.Tensor:
+    def forward(self, source: torch.Tensor) -> torch.Tensor:
         # ----------
         # Self-Attention + Dropout
         # ----------
-        residual = src   # store residual
-        src = self.self_attn(src)
-        src = self.self_attn_drop(src)
+        residual = source   # store residual
+        source = self.self_attn(source)
+        source = self.self_attn_drop(source)
 
         # ----------
         # Add Residual + LayerNorm
         # ----------
-        src += residual
-        src = self.norm1(src)
-        residual = src   # store residual
+        source += residual
+        source = self.norm1(source)
+        residual = source   # store residual
 
         # ----------
         # Feed-Forward Network + Dropout
         # ----------
-        src = self.ffn(src)
-        src = self.ffn_drop(src)
+        source = self.ffn(source)
+        source = self.ffn_drop(source)
         
         # ----------
         # Add Residual + LayerNorm
         # ----------
-        src += residual
-        src = self.norm2(src)
+        source += residual
+        source = self.norm2(source)
 
-        return src
+        return source
     
 
 class Encoder(nn.Module):
@@ -102,12 +102,12 @@ class Encoder(nn.Module):
         ])
         self.norm = nn.LayerNorm(d_model)
         
-    def forward(self, src: torch.Tensor) -> torch.Tensor:
+    def forward(self, source: torch.Tensor) -> torch.Tensor:
         # ----------
         # Compute Encoder Memory
         # ----------
         for layer in self.layers:
-            src = layer(src)
-        src = self.norm(src)
+            source = layer(source)
+        source = self.norm(source)
 
-        return src
+        return source

@@ -1,12 +1,14 @@
 import torch
 import torch.nn as nn
 
+from transformer.utils.vocab import BPETokenizer
 from transformer.models.encoder import Encoder
 from transformer.models.decoder import Decoder
+from transformer.models.lm import DecoderLM
 from transformer.utils.position import sinusoidal_encoding
 
 
-class Transformer(nn.Module):
+class TransformerSeq2Seq(nn.Module):
     """
     
     
@@ -22,14 +24,22 @@ class Transformer(nn.Module):
     """
     def __init__(
             self, 
-            vocab_size: int,
             d_model: int, 
             num_heads: int,
             num_encoder_layers: int,
             num_decoder_layers: int,
-            dropout: float=0.1
+            dropout: float,
+            vocab_size: int,
     ):
         super().__init__()
+
+        self.d_model = d_model
+
+        # ----------
+        # Embedding Table
+        # ----------
+        self.token_embeddings = nn.Embedding(vocab_size, d_model)
+
         # ----------
         # Encoder / Decoder
         # ----------
@@ -42,16 +52,34 @@ class Transformer(nn.Module):
         self.out_proj = nn.Linear(d_model, vocab_size)
 
 
-    def forward(self, src: torch.Tensor, tgt: torch.Tensor):
+    def forward(self, source: torch.Tensor, target: torch.Tensor):
+        # ----------
+        # Get token embeddings
+        # ----------
+        source_emb = self.token_embeddings(source)
+        target_emb = self.token_embeddings(target)
+
+        # ----------
+        # Add positional encodings
+        # ----------
+        source_idx = torch.arange(source.shape[1], device=source.device)
+        target_idx = torch.arange(target.shape[1], device=target.device)
+
+        source_pos_emb = sinusoidal_encoding(source_idx, self.d_model)
+        target_pos_emb = sinusoidal_encoding(target_idx, self.d_model)
+
+        source_emb = source_emb + source_pos_emb
+        target_emb = target_emb + target_pos_emb
+
         # ----------
         # Encoder
         # ----------
-        memory = self.encoder(src)        # (B, T_enc, d_model)
+        memory = self.encoder(source_emb)        # (B, T_enc, d_model)
 
         # ----------
         # Decoder
         # ----------
-        H = self.decoder(tgt, memory)     # (B, T_dec, d_model)
+        H = self.decoder(target_emb, memory)     # (B, T_dec, d_model)
         
         # ----------
         # Output Projection
@@ -59,5 +87,62 @@ class Transformer(nn.Module):
         # => \text{logits} = HW_\text{out},\quad \text{logits} \in \mathcal{R}^{B \times T_\text{dec} \times V}
         # ----------
         logits = self.out_proj(H)         # (B, T_dec, V)
+
+        return logits
+
+
+class TransformerLM(nn.Module):
+    """
+    
+    
+    Args:
+    
+    
+    Returns:
+    
+    """
+    def __init__(
+            self,
+            d_model: int, 
+            num_heads: int,
+            num_decoder_layers: int,
+            dropout: float,
+            vocab_size: int,
+    ):
+        super().__init__()
+
+        self.d_model = d_model
+
+        # ----------
+        # Embedding Table
+        # ----------
+        self.token_embeddings = nn.Embedding(vocab_size, d_model)
+
+        # ----------
+        # Decoder / Output Projection
+        # ----------
+        self.decoder = DecoderLM(d_model, num_heads, num_decoder_layers, dropout)
+        self.out_proj = nn.Linear(d_model, vocab_size)
+
+    def forward(self, x: torch.Tensor):
+        # ----------
+        # Get token embeddings
+        # ----------
+        x_emb = self.token_embeddings(x)
+
+        # ----------
+        # Add positional encodings
+        # ----------
+        x_idx = torch.arange(x.shape[1], device=x.device)
+
+        x_pos_emb = sinusoidal_encoding(x_idx, self.d_model)
+
+        x_emb = x_emb + x_pos_emb
+
+        # ----------
+        # Decoder / Output Projection
+        # ----------
+        H = self.decoder(x_emb)
+        logits = self.out_proj(H)
 
         return logits

@@ -21,7 +21,7 @@ class DecoderLayer(nn.Module):
         dropout (float): Dropout probability
     
     Returns:
-        tgt (Tensor): The updated decoder hidden states of shape (B, T_dec, d_model)
+        target (Tensor): The updated decoder hidden states of shape (B, T_dec, d_model)
     """
     def __init__(self, d_model: int, num_heads: int, dropout: float):
         super().__init__()
@@ -54,47 +54,47 @@ class DecoderLayer(nn.Module):
         self.cross_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+    def forward(self, target: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
         # Masked Self-Attention + Dropout
         # ----------
-        residual = tgt   # store residual
-        tgt = self.self_attn(tgt)
-        tgt = self.self_attn_drop(tgt)
+        residual = target   # store residual
+        target = self.self_attn(target)
+        target = self.self_attn_drop(target)
 
         # ----------
         # Add Residual + LayerNorm
         # ----------
-        tgt += residual
-        tgt = self.norm1(tgt)
-        residual = tgt   # store residual
+        target += residual
+        target = self.norm1(target)
+        residual = target   # store residual
 
         # ----------
         # Encoder Memory Cross-Attention + Dropout
         # ----------
-        tgt = self.cross_attn(tgt, memory)
-        tgt = self.cross_attn_drop(tgt)
+        target = self.cross_attn(target, memory)
+        target = self.cross_attn_drop(target)
 
         # ----------
         # Add Residual + LayerNorm
         # ----------
-        tgt += residual
-        tgt = self.norm2(tgt)
-        residual = tgt
+        target += residual
+        target = self.norm2(target)
+        residual = target
 
         # ----------
         # Feed-Forward Network + Dropout
         # ----------
-        tgt = self.ffn(tgt)
-        tgt = self.ffn_drop(tgt)
+        target = self.ffn(target)
+        target = self.ffn_drop(target)
         
         # ----------
         # Add Residual + LayerNorm
         # ----------
-        tgt += residual
-        tgt = self.norm3(tgt)
+        target += residual
+        target = self.norm3(target)
 
-        return tgt
+        return target
 
 
 class Decoder(nn.Module):
@@ -124,12 +124,12 @@ class Decoder(nn.Module):
         ])
         self.norm = nn.LayerNorm(d_model)
         
-    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+    def forward(self, target: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
         # Compute Hidden States
         # ----------
         for layer in self.layers:
-            tgt = layer(tgt, memory)
-        tgt = self.norm(tgt)
+            target = layer(target, memory)
+        target = self.norm(target)
 
-        return tgt
+        return target

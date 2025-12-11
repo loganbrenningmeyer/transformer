@@ -44,7 +44,7 @@ class SelfAttention(nn.Module):
         # ----------
         # Dropout
         # ----------
-        self.attn_dropout = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # ----------
@@ -85,7 +85,7 @@ class SelfAttention(nn.Module):
         # => A^{(i)} = \text{softmax}_\text{row}(S^{(i)}) \in \mathcal{R}^{B \times T \times T}
         # ----------
         A = torch.softmax(S, dim=-1)    # (B, h, T, T)
-        A = self.attn_dropout(A)
+        A = self.drop(A)
 
         # ----------
         # Apply attention weights to values to get outputs
@@ -112,7 +112,7 @@ class SelfAttention(nn.Module):
 class CrossAttention(nn.Module):
     """
     Applies multi-head cross-attention between the batch of query 
-    inputs tgt of shape (B, T_dec, d_model) from the decoder and 
+    inputs target of shape (B, T_dec, d_model) from the decoder and 
     context inputs memory of shape (B, T_enc, d_model) from the encoder output.
     
     Args:
@@ -141,16 +141,16 @@ class CrossAttention(nn.Module):
         # ----------
         # Dropout
         # ----------
-        self.attn_dropout = nn.Dropout(dropout)
+        self.drop = nn.Dropout(dropout)
 
-    def forward(self, tgt: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
+    def forward(self, target: torch.Tensor, memory: torch.Tensor) -> torch.Tensor:
         # ----------
         # Compute Queries, Keys, and Values
         # => x_\text{dec} \in \mathcal{R}^{B \times T_\text{dec} \times d_\text{model}},\quad x_\text{enc} \in \mathcal{R}^{B \times T_\text{enc} \times d_\text{model}}
         # => Q = x_\text{dec}W_Q \in \mathcal{R}^{B \times T_\text{dec} \times d_\text{model}}
         # => K = x_\text{enc}W_K, V = x_\text{enc}W_V \in \mathcal{R}^{B \times T_\text{enc} \times d_\text{model}}
         # ----------
-        Q: torch.Tensor = self.W_q(tgt)     # (B, T_dec, d_model)
+        Q: torch.Tensor = self.W_q(target)     # (B, T_dec, d_model)
         K: torch.Tensor = self.W_k(memory)  # (B, T_enc, d_model)
         V: torch.Tensor = self.W_v(memory)  # (B, T_enc, d_model)
 
@@ -158,7 +158,7 @@ class CrossAttention(nn.Module):
         # Split into heads
         # => Q^{(i)} \in \mathcal{R}^{B \times T_\text{dec} \times d_h},\quad K^{(i)},V^{(i)} \in \mathcal{R}^{B \times T_\text{enc} \times d_h}
         # ----------
-        B, T_dec, _ = tgt.shape
+        B, T_dec, _ = target.shape
         T_enc = memory.shape[1]
 
         Q = Q.view(B, T_dec, self.h, self.d_h).transpose(1, 2)    # (B, h, T_dec, d_h)
@@ -177,7 +177,7 @@ class CrossAttention(nn.Module):
         # => A^{(i)} = \text{softmax}_\text{row}(S^{(i)}) \in \mathcal{R}^{B \times T_\text{dec} \times T_\text{enc}}
         # ----------
         A = torch.softmax(S, dim=-1)    # (B, h, T_dec, T_enc)
-        A = self.attn_dropout(A)
+        A = self.drop(A)
 
         # ----------
         # Apply attention weights to values to get outputs
