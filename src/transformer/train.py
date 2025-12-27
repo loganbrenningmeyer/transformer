@@ -5,10 +5,10 @@ from torch.utils.data import DataLoader
 from omegaconf import OmegaConf, DictConfig
 import wandb
 
-from transformer.models.transformer import TransformerSeq2Seq, TransformerLM
+from transformer.models.lm.transformer_lm import TransformerLM
 from transformer.utils.vocab import BPETokenizer
 from transformer.data.datasets import LMDataset
-from transformer.training.trainer import Trainer
+from transformer.training.trainer_lm import Trainer
 
 
 def load_config(config_path):
@@ -44,7 +44,9 @@ def main():
     bpe = BPETokenizer(vocab_size)
 
     data_path = os.path.join(config.data.data_dir, 'train.csv')
-    dataset = LMDataset(bpe, data_path)
+    block_size = config.data.block_size
+    batch_size = config.train.batch_size
+    dataset = LMDataset(bpe, data_path, block_size, batch_size)
 
     # ----------
     # Initialize Transformer model
@@ -74,7 +76,17 @@ def main():
         dataset=dataset,
         device=device
     )
-    trainer.train(config.train.steps)
+    # trainer.train(config.train.steps)
+
+    output = model.generate(
+        bpe=bpe,
+        prompt="Hello",
+        block_size=block_size,
+        max_tokens=5,
+        device=device
+    )
+
+    print(f"output: {output}")
 
 
 if __name__ == "__main__":

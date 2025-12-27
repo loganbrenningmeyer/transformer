@@ -1,5 +1,6 @@
 checkpoints/
 datasets/
+runs/
 transformer.egg-info/
 wandb/
 __pycache__/

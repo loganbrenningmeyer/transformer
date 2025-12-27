@@ -65,8 +65,15 @@ class LMDataset:
         Returns:
         
         """
-        indices = torch.randint(len(self.ids) - self.block_size, (self.batch_size,))
+        # ----------
+        # Select random starting token index
+        # ----------
+        indices = torch.randint(len(self.ids) - self.block_size - 1, (self.batch_size,))
 
-        x  = torch.stack([self.ids[i : i+self.block_size] for i in indices])
+        # ----------
+        # Extract batch of input/target token ids
+        # ----------
+        inputs = torch.stack([self.ids[i : i+self.block_size] for i in indices])
+        targets = torch.stack([self.ids[i+1 : i+self.block_size+1] for i in indices])
 
-        return x
+        return inputs, targets

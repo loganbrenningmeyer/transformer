@@ -141,6 +141,6 @@ class BPETokenizer:
         for id in ids:
             text.append(self.vocab[id])
 
-        text_str = b"".join(text).decode("utf-8")
+        text_str = b"".join(text).decode("utf-8", errors="replace")
         
         return text_str
