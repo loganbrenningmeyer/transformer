@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader
 from omegaconf import OmegaConf, DictConfig
 import wandb
 
-from transformer.models.lm.transformer_lm import TransformerLM
 from transformer.utils.tokenizer import BPETokenizer
 from transformer.data.datasets import LMDataset
+from transformer.models.lm.transformer_lm import TransformerLM
 from transformer.training.trainer_lm import TrainerLM
 
 
@@ -65,15 +65,28 @@ def main():
     optimizer = torch.optim.AdamW(model.parameters(), config.train.lr)
     
     # ----------
-    # Create Trainer
+    # Create TrainerLM / train model
     # ----------
-    trainer = Trainer(
+    trainer = TrainerLM(
         model=model,
         optimizer=optimizer,
         dataset=dataset,
         device=device
     )
     trainer.train(config.train.steps)
+
+    # ---------
+    # Generate sample
+    # ----------
+    prompt = "ROMEO:"
+    output = model.generate(
+        bpe=bpe,
+        prompt=prompt,
+        block_size=config.data.block_size,
+        max_tokens=256,
+        device=device
+    )
+    print(f"output: {output}")
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ run:
   name: test
   runs_dir: ./runs
 train:
-  steps: 1
+  steps: 10000
   lr: 0.0001
 model:
   d_model: 512
@@ -11,9 +11,7 @@ model:
   num_decoder_layers: 2
   dropout: 0.1
 data:
-  dataset: ted_talks
-  source_key: en
-  target_key: fr
-  batch_size: 1
-  vocab_size: 256
+  dataset: tiny_shakespeare
+  batch_size: 64
+  vocab_size: 5000
   block_size: 256
