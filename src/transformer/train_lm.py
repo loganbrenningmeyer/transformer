@@ -61,12 +61,18 @@ def main():
         init_wandb(config.run.name)
 
     # ----------
-    # Create BPETokenizer / LMDataset
+    # Initialize BPETokenizer
     # ----------
     vocab_size = config.data.vocab_size
     bpe = BPETokenizer(vocab_size)
 
+    # ----------
+    # Create LMDataset / save vocab
+    # ----------
     dataset = LMDataset(bpe, config.data)
+
+    vocab_path = os.path.join(train_dir, "vocab.json")
+    bpe.save_vocab(vocab_path)
 
     # ----------
     # Initialize TransformerLM model

@@ -1,4 +1,4 @@
-import pandas as pd
+import json
 from tqdm import tqdm
 from collections import defaultdict
 
@@ -146,3 +146,15 @@ class BPETokenizer:
         text_str = b"".join(text).decode("utf-8", errors="replace")
         
         return text_str
+    
+    def save_vocab(self, save_path: str):
+        """
+        
+        """
+        vocab_data = {
+            "vocab_size": self.vocab_size,
+            "merges": [{'pair': pair, 'id': id} for pair, id in self.merges.items()]
+        }
+
+        with open(save_path, 'w') as f:
+            json.dump(vocab_data, f, indent=4)
