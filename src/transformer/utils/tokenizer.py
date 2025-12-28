@@ -151,10 +151,15 @@ class BPETokenizer:
         """
         
         """
-        vocab_data = {
-            "vocab_size": self.vocab_size,
-            "merges": [{'pair': pair, 'id': id} for pair, id in self.merges.items()]
-        }
+        merges_data = [
+            {
+                "pair": pair,
+                "id": id,
+                "text": self.ids_to_string(pair)
+            }
+            for pair, id in self.merges.items()
+        ]
+        vocab_data = {"vocab_size": self.vocab_size, "merges": merges_data}
 
         with open(save_path, 'w') as f:
             json.dump(vocab_data, f, indent=4)
