@@ -41,7 +41,7 @@ logging:
     save_ckpt: 0
 
   sampling:
-    prompt: "ROMEO\n"
+    prompt: "ROMEO:\n"
     max_tokens: 256
     multinomial: true
     temperature: 1.0
