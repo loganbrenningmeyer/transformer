@@ -1,8 +1,8 @@
 import os
 import argparse
 import torch
-from omegaconf import OmegaConf, DictConfig
 import wandb
+from omegaconf import OmegaConf, DictConfig
 
 from transformer.utils.tokenizer import BPETokenizer
 from transformer.data.datasets import LMDataset
@@ -50,7 +50,6 @@ def main():
     # ----------
     train_dir = os.path.join(config.run.runs_dir, config.run.name, "training")
     os.makedirs(os.path.join(train_dir, 'checkpoints'), exist_ok=True)
-    os.makedirs(os.path.join(train_dir, 'figs'), exist_ok=True)
 
     save_config(config, os.path.join(train_dir, 'config.yml'))
 

@@ -1,9 +1,9 @@
+import wandb
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from omegaconf import DictConfig
-import wandb
 from tqdm import tqdm
 
 from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq

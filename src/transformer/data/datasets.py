@@ -1,8 +1,6 @@
-import os
+import datasets
 import torch
 from torch.utils.data import Dataset
-import pandas as pd
-import datasets
 from omegaconf import DictConfig
 
 from transformer.utils.tokenizer import BPETokenizer

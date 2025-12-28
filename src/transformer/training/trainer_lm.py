@@ -1,10 +1,9 @@
 import os
-import html
+import json
+import wandb
 import torch
 import torch.nn.functional as F
-from torch.utils.data import DataLoader
 from torch.optim import Optimizer
-import wandb
 from omegaconf import DictConfig
 from tqdm import tqdm
 
@@ -50,6 +49,7 @@ class TrainerLM:
         # -- Sampling parameters
         self.prompt = logging_config.sampling.prompt
         self.max_tokens = logging_config.sampling.max_tokens
+        self.samples = {}
 
     def train(self, steps: int):
         """
@@ -80,6 +80,8 @@ class TrainerLM:
 
                 step += 1
                 pbar.update(1)
+
+        self.save_samples()
 
     def train_step(self, input_ids: torch.Tensor, target_ids: torch.Tensor) -> torch.Tensor:
         """
@@ -164,12 +166,21 @@ class TrainerLM:
             max_tokens=self.max_tokens,
             device=self.device
         )
+        self.samples[step] = output
 
         print(
             f"\n\n==== (Step {step}) Output ====",
             f"\n\n{output}",
             f"\n\n==============================\n"
         )
+
+    def save_samples(self):
+        """
+        
+        """
+        save_path = os.path.join(self.train_dir, "samples.json")
+        with open(save_path, 'w') as f:
+            json.dump(self.samples, f, indent=4)
 
     def save_and_log_checkpoint(self, step: int):
         """

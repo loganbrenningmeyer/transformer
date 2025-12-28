@@ -2,7 +2,7 @@
 # Run Configuration
 # ====================
 run: 
-  name: save_test
+  name: samples_test
   runs_dir: ./runs
 
 # ====================
@@ -48,4 +48,4 @@ logging:
 
   loss_interval: 1
   ckpt_interval: 50000
-  sample_interval: 250
+  sample_interval: 50
