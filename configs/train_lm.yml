@@ -2,14 +2,14 @@
 # Run Configuration
 # ====================
 run: 
-  name: LM_test
+  name: TransformerLM_2
   runs_dir: ./runs
 
 # ====================
 # Training Parameters
 # ====================
 train:
-  steps: 100
+  steps: 1000
   lr: 0.0001
 
 # ====================
@@ -27,7 +27,7 @@ model:
 # ====================
 data:
   dataset: tiny_shakespeare
-  batch_size: 8
+  batch_size: 64
   vocab_size: 256
   block_size: 256
 
@@ -46,4 +46,4 @@ logging:
 
   loss_interval: 1
   ckpt_interval: 50000
-  sample_interval: 25
+  sample_interval: 250

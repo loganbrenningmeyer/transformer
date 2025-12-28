@@ -51,9 +51,6 @@ class TrainerLM:
         self.prompt = logging_config.sampling.prompt
         self.max_tokens = logging_config.sampling.max_tokens
 
-        wandb.define_metric("global_step")
-        wandb.define_metric("*", step_metric="global_step")
-
     def train(self, steps: int):
         """
         Trains the TransformerLM model for the specified number of steps.

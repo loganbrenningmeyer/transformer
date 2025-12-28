@@ -2,9 +2,8 @@ import torch
 import torch.nn as nn
 
 from transformer.utils.tokenizer import BPETokenizer
-from transformer.models.seq2seq.encoder_seq2seq import Encoder
-from transformer.models.seq2seq.decoder_seq2seq import Decoder
-from transformer.models.lm.transformer_lm import DecoderLM
+from transformer.models.encoder import Encoder
+from transformer.models.decoder import Decoder
 from transformer.utils.position import sinusoidal_encoding
 
 
@@ -44,7 +43,7 @@ class TransformerSeq2Seq(nn.Module):
         # Encoder / Decoder
         # ----------
         self.encoder = Encoder(d_model, num_heads, num_encoder_layers, dropout)
-        self.decoder = Decoder(d_model, num_heads, num_decoder_layers, dropout)
+        self.decoder = Decoder(d_model, num_heads, num_decoder_layers, dropout, use_cross_attn=True)
 
         # ----------
         # Output Projection

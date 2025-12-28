@@ -1,7 +1,6 @@
 import os
 import argparse
 import torch
-from torch.utils.data import DataLoader
 from omegaconf import OmegaConf, DictConfig
 import wandb
 

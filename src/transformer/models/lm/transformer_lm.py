@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from transformer.models.lm.decoder_lm import DecoderLM
+from transformer.models.decoder import Decoder
 from transformer.utils.tokenizer import BPETokenizer
 from transformer.utils.position import sinusoidal_encoding
 
@@ -36,7 +36,7 @@ class TransformerLM(nn.Module):
         # ----------
         # Decoder / Output Projection
         # ----------
-        self.decoder = DecoderLM(d_model, num_heads, num_decoder_layers, dropout)
+        self.decoder = Decoder(d_model, num_heads, num_decoder_layers, dropout, use_cross_attn=False)
         self.out_proj = nn.Linear(d_model, vocab_size)
 
     def forward(self, x: torch.Tensor):
