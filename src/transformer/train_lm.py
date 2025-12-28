@@ -55,6 +55,12 @@ def main():
     save_config(config, os.path.join(train_dir, 'config.yml'))
 
     # ----------
+    # Initialize wandb logging
+    # ----------
+    if config.logging.wandb.enable:
+        init_wandb(config.run.name)
+
+    # ----------
     # Create BPETokenizer / LMDataset
     # ----------
     vocab_size = config.data.vocab_size
@@ -80,12 +86,6 @@ def main():
     # Define Optimizer
     # ----------
     optimizer = torch.optim.AdamW(model.parameters(), config.train.lr)
-
-    # ----------
-    # Initialize wandb logging
-    # ----------
-    if config.logging.wandb.enable:
-        init_wandb(config.run.name)
     
     # ----------
     # Create TrainerLM / train model
