@@ -63,8 +63,10 @@ class TransformerLM(nn.Module):
         bpe: BPETokenizer, 
         prompt: str, 
         block_size: int, 
-        max_tokens: int,
-        device: torch.device
+        device: torch.device,
+        max_tokens: int=256,
+        multinomial: bool=True,
+        temperature: float=1.0
     ):
         """
         
@@ -105,7 +107,13 @@ class TransformerLM(nn.Module):
             # ----------
             # Sample next generated token / append to inputs
             # ----------
-            next_token_id = torch.argmax(logits, dim=1).unsqueeze(0)
+            if multinomial:
+                scaled_logits = logits / temperature
+                probs = torch.softmax(scaled_logits, dim=1)
+                next_token_id = torch.multinomial(probs, num_samples=1)
+            else:
+                next_token_id = torch.argmax(logits, dim=1).unsqueeze(0)
+                
             ids = torch.cat([ids, next_token_id], dim=1)
 
         # ----------

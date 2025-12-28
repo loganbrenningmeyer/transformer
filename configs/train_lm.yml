@@ -37,12 +37,14 @@ data:
 logging:
 
   wandb:
-    enable: 1
+    enable: true
     save_ckpt: 0
 
   sampling:
     prompt: "ROMEO\n"
     max_tokens: 256
+    multinomial: true
+    temperature: 1.0
 
   loss_interval: 1
   ckpt_interval: 50000
