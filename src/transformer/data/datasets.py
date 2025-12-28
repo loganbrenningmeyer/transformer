@@ -21,7 +21,7 @@ class Seq2SeqDataset(Dataset):
         if data_config.dataset == "ted_talks":
             dataset = datasets.load_dataset(
                 "IWSLT/ted_talks_iwslt", 
-                language_pair=("en","fr"),
+                language_pair=(self.source_key, self.target_key),
                 year="2014"
             )
 

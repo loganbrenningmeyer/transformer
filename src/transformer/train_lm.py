@@ -18,6 +18,24 @@ def load_config(config_path):
 def save_config(config: DictConfig, save_path: str):
     OmegaConf.save(config, save_path)
 
+def init_wandb(run_name: str):
+    """
+    Initializes wandb for logging, runs in offline mode on failure  
+    """
+    try:
+        wandb.init(
+            name=run_name,
+            project=os.environ.get("WANDB_PROJECT", "transformer"), 
+            entity=os.environ.get("WANDB_ENTITY", None)
+        )
+    except Exception as e:
+        # -- Use offline if init fails
+        print(f"---- wandb.init() failed, running offline: {e}")
+        wandb.init(
+            name=run_name,
+            mode='offline'
+        )
+
 def main():
     # ----------
     # Parse Arguments / Load Config
@@ -63,30 +81,26 @@ def main():
     # Define Optimizer
     # ----------
     optimizer = torch.optim.AdamW(model.parameters(), config.train.lr)
+
+    # ----------
+    # Initialize wandb logging
+    # ----------
+    if config.logging.wandb.enable:
+        init_wandb(config.run.name)
     
     # ----------
     # Create TrainerLM / train model
     # ----------
     trainer = TrainerLM(
         model=model,
+        bpe=bpe,
         optimizer=optimizer,
         dataset=dataset,
-        device=device
+        device=device,
+        train_dir=train_dir,
+        logging_config=config.logging
     )
     trainer.train(config.train.steps)
-
-    # ---------
-    # Generate sample
-    # ----------
-    prompt = "ROMEO:"
-    output = model.generate(
-        bpe=bpe,
-        prompt=prompt,
-        block_size=config.data.block_size,
-        max_tokens=256,
-        device=device
-    )
-    print(f"output: {output}")
 
 
 if __name__ == "__main__":
