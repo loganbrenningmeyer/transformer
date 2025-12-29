@@ -155,7 +155,9 @@ class BPETokenizer:
         text = []
 
         for id in ids:
-            text.append(self.vocab[id])
+            # -- Don't include special tokens
+            if id not in [self.bos_id, self.eos_id, self.pad_id]:
+                text.append(self.vocab[id])
 
         text_str = b"".join(text).decode("utf-8", errors="replace")
         

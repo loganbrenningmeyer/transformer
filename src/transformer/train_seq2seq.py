@@ -70,19 +70,12 @@ def main():
     # Create DataLoader / save vocab
     # ----------
     train_dataset = Seq2SeqDataset(bpe, config.data, "2014")
-    valid_dataset = Seq2SeqDataset(bpe, config.data, "2015")
 
     train_loader = DataLoader(
         train_dataset, 
         batch_size=config.data.batch_size,
         shuffle=True,
         collate_fn=train_dataset.collate_fn
-    )
-    valid_loader = DataLoader(
-        valid_dataset,
-        batch_size=config.sampling.num_samples,
-        shuffle=True,
-        collate_fn=valid_dataset.collate_fn
     )
 
     vocab_path = os.path.join(train_dir, "vocab.json")
@@ -116,7 +109,6 @@ def main():
         bpe=bpe,
         optimizer=optimizer,
         train_loader=train_loader,
-        valid_loader=valid_loader,
         device=device,
         train_dir=train_dir,
         logging_config=config.logging,

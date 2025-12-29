@@ -31,7 +31,7 @@ data:
   target_key: fr
 
   batch_size: 64
-  vocab_size: 10000
+  vocab_size: 300
   block_size: 128
 
 # ====================

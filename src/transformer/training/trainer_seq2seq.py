@@ -28,7 +28,6 @@ class TrainerSeq2Seq:
             bpe: BPETokenizer,
             optimizer: Optimizer,
             train_loader: DataLoader,
-            valid_loader: DataLoader,
             device: torch.device,
             train_dir: str,
             logging_config: DictConfig,
@@ -49,7 +48,6 @@ class TrainerSeq2Seq:
         self.sample_interval = logging_config.sample_interval
 
         # -- Sampling parameters
-        self.sample_iter = iter(valid_loader)
         self.num_samples = sample_config.num_samples
         self.max_tokens = sample_config.max_tokens
         self.samples = {}
@@ -176,27 +174,39 @@ class TrainerSeq2Seq:
         }
         block_size = self.train_loader.dataset.block_size
         max_tokens = self.max_tokens
-        source, _ = next(self.sample_iter)
+        
+        # ---------
+        # Randomly sample source inputs
+        # ----------
+        dataset = self.train_loader.dataset
+        indices = torch.randint(len(dataset), (self.num_samples,))
+        batch = [dataset[i] for i in indices]
+
+        # -- Pad samples
+        source, _ = dataset.collate_fn(batch)
+        source = source.to(self.device)
 
         # ----------
         # Generate batch of samples
         # ----------
-        samples_step = []
+        output_texts = []
 
         output_ids = self.model.generate(source, special_ids, block_size, max_tokens)
 
         for ids in output_ids:
             ids = ids.detach().cpu().tolist()
             output_text = self.bpe.ids_to_string(ids)
-            samples_step.append(output_text)
+            output_texts.append(output_text)
 
-        self.samples[step] = samples_step
+        self.samples[step] = output_texts
 
-        print(
-            f"\n\n==== (Step {step}) Output ====",
-            f"\n\n{output_text}",
-            f"\n\n==============================\n"
-        )
+        print(f"\n\n======== (Step {step}) Outputs ========")
+        for i, output_text in enumerate(output_texts):
+            print(f"\n\n---- Sample {i} ----")
+            source_ids = source[i].detach().cpu().tolist()
+            print(f"\n(Source): {self.bpe.ids_to_string(source_ids)}")
+            print(f"\n(Output): {output_text}")
+        print(f"\n\n======================================\n")
 
     def save_samples(self):
         """
