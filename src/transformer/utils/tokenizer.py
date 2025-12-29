@@ -12,6 +12,13 @@ class BPETokenizer:
         self.vocab = {}
         self.merges = {}
 
+        # ----------
+        # Define special token ids (final 3 of vocab_size)
+        # ----------
+        self.pad_id = vocab_size - 3
+        self.bos_id = vocab_size - 2
+        self.eos_id = vocab_size - 1
+
     def __len__(self):
         return len(self.vocab)
     
@@ -50,7 +57,7 @@ class BPETokenizer:
 
         with tqdm(total=self.vocab_size, initial=curr_size, desc="Building Vocab") as pbar:
          
-            while curr_size < self.vocab_size:
+            while curr_size < self.vocab_size - 3:
                 # ----------
                 # Get most common new token
                 # ----------
@@ -67,6 +74,13 @@ class BPETokenizer:
                 curr_size += 1
 
                 pbar.update(1)
+
+        # ----------
+        # Add special tokens
+        # ----------
+        self.vocab[self.pad_id] = b"<pad>"
+        self.vocab[self.bos_id] = b"<bos>"
+        self.vocab[self.eos_id] = b"<eos>"
 
     def get_new_pair(self, ids: list[int]):
         """

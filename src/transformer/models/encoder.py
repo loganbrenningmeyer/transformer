@@ -45,12 +45,12 @@ class EncoderBlock(nn.Module):
         self.self_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, source: torch.Tensor) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, pad_mask: torch.Tensor=None) -> torch.Tensor:
         # ----------
         # Self-Attention + Dropout
         # ----------
         residual = source   # store residual
-        source = self.self_attn(source)
+        source = self.self_attn(source, pad_mask)
         source = self.self_attn_drop(source)
 
         # ----------
@@ -96,18 +96,18 @@ class Encoder(nn.Module):
         # ----------
         # EncoderLayers / LayerNorm
         # ----------
-        self.layers = nn.ModuleList([
+        self.enc_blocks = nn.ModuleList([
             EncoderBlock(d_model, num_heads, dropout)
             for _ in range(num_layers)
         ])
         self.norm = nn.LayerNorm(d_model)
         
-    def forward(self, source: torch.Tensor) -> torch.Tensor:
+    def forward(self, source: torch.Tensor, pad_mask: torch.Tensor=None) -> torch.Tensor:
         # ----------
         # Compute Encoder Memory
         # ----------
-        for layer in self.layers:
-            source = layer(source)
+        for enc_block in self.enc_blocks:
+            source = enc_block(source, pad_mask)
         source = self.norm(source)
 
         return source

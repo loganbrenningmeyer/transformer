@@ -1,22 +1,55 @@
+# ====================
+# Run Configuration
+# ====================
 run: 
-  name: test
-  runs_dir: ./runs
+  name: seq2seq_test
+  runs_dir: ./runs/seq2seq
 
+# ====================
+# Training Parameters
+# ====================
 train:
-  steps: 1
+  steps: 100
   lr: 0.0001
 
+# ====================
+# Model Configuration
+# ====================
 model:
-  d_model: 512
+  d_model: 256
   num_heads: 4
-  num_encoder_layers: 2
-  num_decoder_layers: 2
-  dropout: 0.1
+  num_encoder_layers: 4
+  num_decoder_layers: 4
+  dropout: 0.2
 
+# ====================
+# Dataset Configuration
+# ====================
 data:
   dataset: ted_talks
   source_key: en
   target_key: fr
-  batch_size: 1
-  vocab_size: 256
-  block_size: 256
+
+  batch_size: 64
+  vocab_size: 10000
+  block_size: 128
+
+# ====================
+# Sampling Parameters
+# ====================
+sampling:
+  num_samples: 4
+  max_tokens: 128
+
+# ====================
+# Logging Parameters
+# ====================
+logging:
+
+  wandb:
+    enable: true
+    save_ckpt: 0
+
+  loss_interval: 1
+  ckpt_interval: 50000
+  sample_interval: 50

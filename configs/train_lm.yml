@@ -3,7 +3,7 @@
 # ====================
 run: 
   name: samples_test
-  runs_dir: ./runs
+  runs_dir: ./runs/lm
 
 # ====================
 # Training Parameters
@@ -32,6 +32,15 @@ data:
   block_size: 256
 
 # ====================
+# Sampling Parameters
+# ====================
+sampling:
+  prompt: "ROMEO:\n"
+  max_tokens: 256
+  multinomial: true
+  temperature: 1.0
+
+# ====================
 # Logging Parameters
 # ====================
 logging:
@@ -39,12 +48,6 @@ logging:
   wandb:
     enable: false
     save_ckpt: 0
-
-  sampling:
-    prompt: "ROMEO:\n"
-    max_tokens: 256
-    multinomial: true
-    temperature: 1.0
 
   loss_interval: 1
   ckpt_interval: 50000

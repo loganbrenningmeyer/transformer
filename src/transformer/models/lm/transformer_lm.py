@@ -46,8 +46,7 @@ class TransformerLM(nn.Module):
         x_emb = self.token_embeddings(x)
 
         x_idx = torch.arange(x.shape[1], device=x.device)
-        x_pos_emb = sinusoidal_encoding(x_idx, self.d_model)
-        x_emb = x_emb + x_pos_emb
+        x_emb += sinusoidal_encoding(x_idx, self.d_model)
 
         # ----------
         # Decoder / Output Projection
@@ -60,14 +59,13 @@ class TransformerLM(nn.Module):
     @torch.no_grad()
     def generate(
         self, 
-        bpe: BPETokenizer, 
-        prompt: str, 
-        block_size: int, 
+        prompt_ids: list[int], 
         device: torch.device,
+        block_size: int, 
         max_tokens: int=256,
         multinomial: bool=True,
         temperature: float=1.0
-    ):
+    ) -> list[int]:
         """
         
         
@@ -79,14 +77,8 @@ class TransformerLM(nn.Module):
         """
         self.eval()
 
-        # ----------
-        # Tokenize prompt
-        # ----------
-        prompt_ids = list(prompt.encode("utf-8"))
-        prompt_ids = bpe.tokenize(prompt_ids)
-
-        ids = torch.tensor(prompt_ids, dtype=torch.long, device=device)
-        ids = ids.unsqueeze(0)    # (1, T_prompt)
+        output_ids = torch.tensor(prompt_ids, dtype=torch.long, device=device)
+        output_ids = output_ids.unsqueeze(0)    # (1, T_prompt)
 
         # ----------
         # Autoregressive generation
@@ -95,14 +87,14 @@ class TransformerLM(nn.Module):
             # ----------
             # Crop to block_size (T = min(T_prompt, block_size))
             # ----------
-            context_ids = ids[:, -block_size:]      # (1, T)
+            context_ids = output_ids[:, -block_size:]      # (1, T)
 
             # ----------
             # Predict next token logits
             # ----------
-            logits = self(context_ids)              # (1, T, vocab_size)
+            logits = self(context_ids)              # (1, T, V)
             # -- Get final token logits
-            logits = logits[:, -1, :]               # (1, vocab_size)
+            logits = logits[:, -1, :]               # (1, V)
 
             # ----------
             # Sample next generated token / append to inputs
@@ -114,12 +106,6 @@ class TransformerLM(nn.Module):
             else:
                 next_token_id = torch.argmax(logits, dim=1).unsqueeze(0)
                 
-            ids = torch.cat([ids, next_token_id], dim=1)
+            output_ids = torch.cat([output_ids, next_token_id], dim=1)
 
-        # ----------
-        # Convert generated ids to text
-        # ----------
-        ids = ids[0].detach().cpu().tolist()
-        output = bpe.ids_to_string(ids)
-
-        return output
+        return output_ids[0].detach().cpu().tolist()

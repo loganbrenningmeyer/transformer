@@ -60,7 +60,12 @@ class DecoderBlock(nn.Module):
         self.cross_attn_drop = nn.Dropout(dropout)
         self.ffn_drop = nn.Dropout(dropout)
 
-    def forward(self, target: torch.Tensor, memory: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(
+            self, 
+            target: torch.Tensor, 
+            memory: torch.Tensor | None = None,
+            enc_pad_mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
         # ----------
         # Masked Self-Attention / Residual + Norm
         # ----------
@@ -77,7 +82,7 @@ class DecoderBlock(nn.Module):
                 raise ValueError("memory must be provided when use_cross_attn=True")
             
             residual = target   # store residual
-            target = self.cross_attn(target, memory)
+            target = self.cross_attn(target, memory, enc_pad_mask)
             target = self.cross_attn_drop(target)
             target = self.norm2(target + residual)
 
@@ -114,16 +119,21 @@ class Decoder(nn.Module):
         # ----------
         # DecoderLayers / LayerNorm
         # ----------
-        self.layers = nn.ModuleList([
+        self.dec_blocks = nn.ModuleList([
             DecoderBlock(d_model, num_heads, dropout, use_cross_attn)
             for _ in range(num_layers)
         ])
         
-    def forward(self, target: torch.Tensor, memory: torch.Tensor | None = None) -> torch.Tensor:
+    def forward(
+            self, 
+            target: torch.Tensor, 
+            memory: torch.Tensor | None = None,
+            enc_pad_mask: torch.Tensor | None = None
+    ) -> torch.Tensor:
         # ----------
         # Compute Hidden States
         # ----------
-        for layer in self.layers:
-            target = layer(target, memory)
+        for dec_block in self.dec_blocks:
+            target = dec_block(target, memory, enc_pad_mask)
 
         return target

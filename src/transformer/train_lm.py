@@ -102,7 +102,8 @@ def main():
         dataset=dataset,
         device=device,
         train_dir=train_dir,
-        logging_config=config.logging
+        logging_config=config.logging,
+        sample_config=config.sampling
     )
     trainer.train(config.train.steps)
 

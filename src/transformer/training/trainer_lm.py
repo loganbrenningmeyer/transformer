@@ -30,7 +30,8 @@ class TrainerLM:
             dataset: LMDataset,
             device: torch.device,
             train_dir: str,
-            logging_config: DictConfig
+            logging_config: DictConfig,
+            sample_config: DictConfig
     ):
         self.model = model
         self.bpe = bpe
@@ -47,8 +48,10 @@ class TrainerLM:
         self.sample_interval = logging_config.sample_interval
 
         # -- Sampling parameters
-        self.prompt = logging_config.sampling.prompt
-        self.max_tokens = logging_config.sampling.max_tokens
+        self.prompt = sample_config.prompt
+        self.max_tokens = sample_config.max_tokens
+        self.multinomial = sample_config.multinomial
+        self.temperature = sample_config.temperature
         self.samples = {}
 
     def train(self, steps: int):
@@ -74,7 +77,7 @@ class TrainerLM:
                 loss = self.train_step(input_ids, target_ids)
 
                 # ----------
-                # Log / save loss and checkpoint
+                # Log loss / save checkpoint
                 # ----------
                 self.log_and_save(loss.item(), step)
 
@@ -117,8 +120,8 @@ class TrainerLM:
         # Flatten vocab logits / target ids for each token
         # ----------
         B, T, V = logits.shape
-        logits  = logits.view(B*T, V)
-        target_ids = target_ids.view(B*T)
+        logits = logits.reshape(B*T, V)
+        target_ids = target_ids.reshape(B*T)
 
         return F.cross_entropy(logits, target_ids)
     
@@ -157,20 +160,29 @@ class TrainerLM:
         Generates sample text from input prompt and logs to wandb
         """
         # ----------
-        # Generate / log text from input prompt
+        # Tokenize prompt
         # ----------
-        output = self.model.generate(
-            bpe=self.bpe,
-            prompt=self.prompt,
+        prompt_ids = list(self.prompt.encode("utf-8"))
+        prompt_ids = self.bpe.tokenize(prompt_ids)
+
+        # ----------
+        # Generate output ids / convert to text
+        # ----------
+        output_ids = self.model.generate(
+            prompt_ids=prompt_ids,
+            device=self.device,
             block_size=self.dataset.block_size,
             max_tokens=self.max_tokens,
-            device=self.device
+            multinomial=self.multinomial,
+            temperature=self.temperature
         )
-        self.samples[step] = output
+
+        output_text = self.bpe.ids_to_string(output_ids)
+        self.samples[step] = output_text
 
         print(
             f"\n\n==== (Step {step}) Output ====",
-            f"\n\n{output}",
+            f"\n\n{output_text}",
             f"\n\n==============================\n"
         )
 

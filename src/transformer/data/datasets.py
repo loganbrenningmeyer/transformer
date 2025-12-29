@@ -7,7 +7,8 @@ from transformer.utils.tokenizer import BPETokenizer
 
 
 class Seq2SeqDataset(Dataset):
-    def __init__(self, bpe: BPETokenizer, data_config: DictConfig):
+    def __init__(self, bpe: BPETokenizer, data_config: DictConfig, year: str):
+        self.bpe = bpe
         self.block_size = data_config.block_size
         self.batch_size = data_config.batch_size
         self.source_key = data_config.source_key
@@ -20,7 +21,7 @@ class Seq2SeqDataset(Dataset):
             dataset = datasets.load_dataset(
                 "IWSLT/ted_talks_iwslt", 
                 language_pair=(self.source_key, self.target_key),
-                year="2014"
+                year=year
             )
 
             self.train_data = dataset["train"]
@@ -35,28 +36,70 @@ class Seq2SeqDataset(Dataset):
         # Build vocabulary
         # ----------
         all_texts = self.source_texts + self.target_texts
-        bpe.build_vocab(all_texts)
+        self.bpe.build_vocab(all_texts)
 
         # ----------
         # Tokenize text
         # ----------
-        base_source_ids = [bpe.encode_text(text) for text in self.source_texts]
-        base_target_ids = [bpe.encode_text(text) for text in self.target_texts]
+        base_source_ids = [self.bpe.encode_text(text) for text in self.source_texts]
+        base_target_ids = [self.bpe.encode_text(text) for text in self.target_texts]
 
-        self.source_ids = [bpe.tokenize(ids) for ids in base_source_ids]
-        self.target_ids = [bpe.tokenize(ids) for ids in base_target_ids]
+        self.source_ids = [self.bpe.tokenize(ids) for ids in base_source_ids]
+        self.target_ids = [self.bpe.tokenize(ids) for ids in base_target_ids]
 
     def __len__(self):
         return len(self.train_data)
 
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         """
 
         """
-        source = torch.tensor(self.source_ids[idx], dtype=torch.long)
-        target = torch.tensor(self.target_ids[idx], dtype=torch.long)
+        # ----------
+        # source: ids + [EOS]
+        # ----------
+        source = self.source_ids[idx][:self.block_size - 1]
+        source = source + [self.bpe.eos_id]
 
-        return source, target
+        # ----------
+        # target: [BOS] + ids + [EOS]
+        # ----------
+        target = self.target_ids[idx][:self.block_size - 2]
+        target = [self.bpe.bos_id] + target + [self.bpe.eos_id]
+
+        return (
+            torch.tensor(source, dtype=torch.long),
+            torch.tensor(target, dtype=torch.long)
+        )
+    
+    def collate_fn(self, batch: list[tuple[torch.Tensor, torch.Tensor]]):
+        """
+        Pads source/target samples in batch to be of the same length
+        """
+        base_sources = [src for (src, tgt) in batch]
+        base_targets = [tgt for (src, tgt) in batch]
+
+        # ----------
+        # Find max source/target length in batch
+        # ----------
+        src_max_len = max([len(src) for src in base_sources])
+        tgt_max_len = max([len(tgt) for tgt in base_targets])
+
+        # ----------
+        # Pad samples to max length
+        # ----------
+        source = torch.full((len(batch), src_max_len), self.bpe.pad_id, dtype=torch.long)
+        target = torch.full((len(batch), tgt_max_len), self.bpe.pad_id, dtype=torch.long)
+
+        # ----------
+        # Copy samples over
+        # ----------
+        for i, base_source in enumerate(base_sources):
+            source[i, :len(base_source)] = base_source
+
+        for i, base_target in enumerate(base_targets):
+            target[i, :len(base_target)] = base_target
+
+        return (source, target)
 
 
 class LMDataset:
