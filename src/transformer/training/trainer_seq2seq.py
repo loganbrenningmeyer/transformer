@@ -183,29 +183,30 @@ class TrainerSeq2Seq:
         batch = [dataset[i] for i in indices]
 
         # -- Pad samples
-        source, _ = dataset.collate_fn(batch)
+        source, target = dataset.collate_fn(batch)
         source = source.to(self.device)
 
         # ----------
         # Generate batch of samples
         # ----------
-        output_texts = []
+        self.samples[step] = {"source": [], "output": [], "target": []}
 
         output_ids = self.model.generate(source, special_ids, block_size, max_tokens)
 
-        for ids in output_ids:
-            ids = ids.detach().cpu().tolist()
-            output_text = self.bpe.ids_to_string(ids)
-            output_texts.append(output_text)
-
-        self.samples[step] = output_texts
+        for i in range(len(output_ids)):
+            source_text = self.bpe.ids_to_string(source[i].detach().cpu().tolist())
+            output_text = self.bpe.ids_to_string(output_ids[i].detach().cpu().tolist())
+            target_text = self.bpe.ids_to_string(target[i].detach().cpu().tolist())
+            self.samples[step]["source"].append(source_text)
+            self.samples[step]["output"].append(output_text)
+            self.samples[step]["target"].append(target_text)
 
         print(f"\n\n======== (Step {step}) Outputs ========")
-        for i, output_text in enumerate(output_texts):
+        for i in range(len(output_ids)):
             print(f"\n\n---- Sample {i} ----")
-            source_ids = source[i].detach().cpu().tolist()
-            print(f"\n(Source): {self.bpe.ids_to_string(source_ids)}")
-            print(f"\n(Output): {output_text}")
+            print(f"\n(Source): {self.samples[step]['source'][i]}")
+            print(f"\n(Output): {self.samples[step]['output'][i]}")
+            print(f"\n(Target): {self.samples[step]['target'][i]}")
         print(f"\n\n======================================\n")
 
     def save_samples(self):

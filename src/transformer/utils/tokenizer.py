@@ -1,6 +1,6 @@
 import json
 from tqdm import tqdm
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 
 class BPETokenizer:
@@ -87,17 +87,10 @@ class BPETokenizer:
         
         """
         # ----------
-        # Count token pair occurrences
+        # Count token pair occurrences / add most common
         # ----------
-        pair_counts = defaultdict(int)
+        pair_counts = Counter(zip(ids, ids[1:]))
 
-        for i in range(len(ids) - 1):
-            pair = (ids[i], ids[i+1])
-            pair_counts[pair] += 1
-
-        # ----------
-        # Add most common token
-        # ----------
         new_pair = max(pair_counts, key=pair_counts.get)
 
         return new_pair
@@ -133,11 +126,9 @@ class BPETokenizer:
         Returns:
         
         """
-        sorted_merges = sorted(self.merges.items(), key=lambda x: x[1])
-
         tokenized_ids = ids
 
-        for (pair, id) in sorted_merges:
+        for (pair, id) in self.merges.items():
             tokenized_ids = self.merge_pair(tokenized_ids, pair, id)
 
         return tokenized_ids

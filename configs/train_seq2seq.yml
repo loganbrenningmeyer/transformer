@@ -2,14 +2,14 @@
 # Run Configuration
 # ====================
 run: 
-  name: seq2seq_test
+  name: TransformerSeq2Seq
   runs_dir: ./runs/seq2seq
 
 # ====================
 # Training Parameters
 # ====================
 train:
-  steps: 100
+  steps: 50000
   lr: 0.0001
 
 # ====================
@@ -31,15 +31,15 @@ data:
   target_key: fr
 
   batch_size: 64
-  vocab_size: 300
-  block_size: 128
+  vocab_size: 10000
+  block_size: 192
 
 # ====================
 # Sampling Parameters
 # ====================
 sampling:
-  num_samples: 4
-  max_tokens: 128
+  num_samples: 8
+  max_tokens: 256
 
 # ====================
 # Logging Parameters
@@ -51,5 +51,5 @@ logging:
     save_ckpt: 0
 
   loss_interval: 1
-  ckpt_interval: 50000
-  sample_interval: 50
+  ckpt_interval: 10000
+  sample_interval: 5000

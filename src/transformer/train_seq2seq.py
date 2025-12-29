@@ -69,7 +69,7 @@ def main():
     # ----------
     # Create DataLoader / save vocab
     # ----------
-    train_dataset = Seq2SeqDataset(bpe, config.data, "2014")
+    train_dataset = Seq2SeqDataset(bpe, config.data)
 
     train_loader = DataLoader(
         train_dataset, 

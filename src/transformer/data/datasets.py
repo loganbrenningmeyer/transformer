@@ -7,7 +7,7 @@ from transformer.utils.tokenizer import BPETokenizer
 
 
 class Seq2SeqDataset(Dataset):
-    def __init__(self, bpe: BPETokenizer, data_config: DictConfig, year: str):
+    def __init__(self, bpe: BPETokenizer, data_config: DictConfig):
         self.bpe = bpe
         self.block_size = data_config.block_size
         self.batch_size = data_config.batch_size
@@ -18,17 +18,21 @@ class Seq2SeqDataset(Dataset):
         # Load dataset
         # ----------
         if data_config.dataset == "ted_talks":
-            dataset = datasets.load_dataset(
-                "IWSLT/ted_talks_iwslt", 
-                language_pair=(self.source_key, self.target_key),
-                year=year
-            )
+            self.train_data = []
 
-            self.train_data = dataset["train"]
+            years = ["2014", "2015", "2016"]
+            for year in years:
+                dataset = datasets.load_dataset(
+                    "IWSLT/ted_talks_iwslt", 
+                    language_pair=(self.source_key, self.target_key),
+                    year=year
+                )
+                self.train_data.extend(dataset["train"]["translation"])
+
             self.source_texts = []
             self.target_texts = []
 
-            for sample in self.train_data["translation"]:
+            for sample in self.train_data:
                 self.source_texts.append(sample[self.source_key])
                 self.target_texts.append(sample[self.target_key])
 
