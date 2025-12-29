@@ -17,8 +17,8 @@ train:
 # ====================
 model:
   d_model: 512
-  num_heads: 6
-  num_decoder_layers: 6
+  num_heads: 4
+  num_decoder_layers: 4
   dropout: 0.2
 
 # ====================

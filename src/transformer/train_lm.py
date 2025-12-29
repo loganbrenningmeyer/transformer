@@ -24,7 +24,7 @@ def init_wandb(run_name: str):
     try:
         wandb.init(
             name=run_name,
-            project=os.environ.get("WANDB_PROJECT", "transformer"), 
+            project=os.environ.get("WANDB_PROJECT", "TransformerLM"), 
             entity=os.environ.get("WANDB_ENTITY", None)
         )
     except Exception as e:
