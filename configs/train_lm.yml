@@ -2,33 +2,32 @@
 # Run Configuration
 # ====================
 run: 
-  name: samples_test
+  name: TransformerLM
   runs_dir: ./runs/lm
 
 # ====================
 # Training Parameters
 # ====================
 train:
-  steps: 100
-  lr: 0.0001
+  steps: 20000
+  lr: 0.0003
 
 # ====================
 # Model Configuration
 # ====================
 model:
   d_model: 512
-  num_heads: 4
-  num_encoder_layers: 2
-  num_decoder_layers: 2
-  dropout: 0.1
+  num_heads: 6
+  num_decoder_layers: 6
+  dropout: 0.2
 
 # ====================
 # Dataset Configuration
 # ====================
 data:
   dataset: tiny_shakespeare
-  batch_size: 8
-  vocab_size: 300
+  batch_size: 32
+  vocab_size: 4096
   block_size: 256
 
 # ====================
@@ -38,7 +37,7 @@ sampling:
   prompt: "ROMEO:\n"
   max_tokens: 256
   multinomial: true
-  temperature: 1.0
+  temperature: 0.8
 
 # ====================
 # Logging Parameters
@@ -46,9 +45,9 @@ sampling:
 logging:
 
   wandb:
-    enable: false
+    enable: true
     save_ckpt: 0
 
-  loss_interval: 1
-  ckpt_interval: 50000
-  sample_interval: 50
+  loss_interval: 10
+  ckpt_interval: 5000
+  sample_interval: 1000
