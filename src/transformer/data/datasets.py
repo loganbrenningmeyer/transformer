@@ -135,8 +135,7 @@ class LMDataset:
         # ----------
         # Tokenize text
         # ----------
-        base_ids = bpe.encode_text(self.train_text)
-        self.ids = torch.tensor(bpe.tokenize(base_ids), dtype=torch.long)
+        self.ids = torch.tensor(bpe.encode(self.train_text), dtype=torch.long)
 
     def get_batch(self):
         """

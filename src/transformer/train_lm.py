@@ -71,7 +71,7 @@ def main():
     dataset = LMDataset(bpe, config.data)
 
     vocab_path = os.path.join(train_dir, "vocab.json")
-    bpe.save_vocab(vocab_path)
+    bpe.save(vocab_path)
 
     # ----------
     # Initialize TransformerLM model

@@ -2,7 +2,7 @@
 # Run Configuration
 # ====================
 run: 
-  name: TransformerLM
+  name: TransformerLM_vocab
   runs_dir: ./runs/lm
 
 # ====================
@@ -34,7 +34,11 @@ data:
 # Sampling Parameters
 # ====================
 sampling:
-  prompt: "ROMEO:\n"
+  prompts: [
+    "ROMEO:\n",
+    "JULET:\n",
+    "CAPULET:\nWhat say you now?"
+  ]
   max_tokens: 256
   multinomial: true
   temperature: 0.8

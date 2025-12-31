@@ -48,7 +48,7 @@ class TrainerLM:
         self.sample_interval = logging_config.sample_interval
 
         # -- Sampling parameters
-        self.prompt = sample_config.prompt
+        self.prompts = sample_config.prompts
         self.max_tokens = sample_config.max_tokens
         self.multinomial = sample_config.multinomial
         self.temperature = sample_config.temperature
@@ -159,31 +159,36 @@ class TrainerLM:
         """
         Generates sample text from input prompt and logs to wandb
         """
-        # ----------
-        # Tokenize prompt
-        # ----------
-        prompt_ids = self.bpe.encode(self.prompt)
+        self.samples[step] = {}
+        print(f"\n\n========= Step {step} =========\n")
 
-        # ----------
-        # Generate output ids / convert to text
-        # ----------
-        output_ids = self.model.generate(
-            prompt_ids=prompt_ids,
-            device=self.device,
-            block_size=self.dataset.block_size,
-            max_tokens=self.max_tokens,
-            multinomial=self.multinomial,
-            temperature=self.temperature
-        )
+        for prompt in self.prompts:
+            # ----------
+            # Tokenize prompt
+            # ----------
+            prompt_ids = self.bpe.encode(prompt)
 
-        output_text = self.bpe.decode(output_ids)
-        self.samples[step] = output_text
+            # ----------
+            # Generate output ids / convert to text
+            # ----------
+            output_ids = self.model.generate(
+                prompt_ids=prompt_ids,
+                device=self.device,
+                block_size=self.dataset.block_size,
+                max_tokens=self.max_tokens,
+                multinomial=self.multinomial,
+                temperature=self.temperature
+            )
 
-        print(
-            f"\n\n==== (Step {step}) Output ====",
-            f"\n\n{output_text}",
-            f"\n\n==============================\n"
-        )
+            output_text = self.bpe.decode(output_ids)
+            self.samples[step][prompt] = output_text
+
+            print(
+                f"\n\n==============================\n",
+                f"\n\n(Prompt): {prompt}"
+                f"\n\n(Output): {output_text}",
+                f"\n\n==============================\n"
+            )
 
     def save_samples(self):
         """
