@@ -64,12 +64,14 @@ def main():
     # Initialize BPETokenizer
     # ----------
     vocab_size = config.data.vocab_size
+    vocab_path = config.data.vocab_path     # (Optional): Precomputed vocab
+
     bpe = BPETokenizer(vocab_size)
 
     # ----------
     # Create DataLoader / save vocab
     # ----------
-    train_dataset = Seq2SeqDataset(bpe, config.data)
+    train_dataset = Seq2SeqDataset(bpe, config.data, vocab_path)
 
     train_loader = DataLoader(
         train_dataset, 

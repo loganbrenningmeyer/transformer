@@ -104,13 +104,19 @@ class TrainerSeq2Seq:
         # ----------
         # Separate target_in / target_out
         # ----------
-        target_in = target[:, :-1]      # (B, T_tgt_in) : [<bos>, y_1, y_2, ..., y_T]
-        target_out = target[:, 1:]      # (B, T_tgt_out): [y_1, y_2, ..., y_T, <eos>]
+        target_in = target[:, :-1]    # (B, T_tgt_in) : [<bos>, y_1, y_2, ..., y_T]
+        target_out = target[:, 1:]    # (B, T_tgt_out): [y_1, y_2, ..., y_T, <eos>]
+
+        # ---------
+        # Define Encoder/Decoder padding masks 
+        # ----------
+        enc_pad_mask = (source == self.bpe.pad_id)
+        dec_pad_mask = (target_in == self.bpe.pad_id)
 
         # ----------
         # Forward pass
         # ----------
-        logits = self.model(source, target_in)      # (B, T_tgt_in, V)
+        logits = self.model(source, target_in, enc_pad_mask, dec_pad_mask)      # (B, T_tgt_in, V)
 
         # ----------
         # Compute loss / update
@@ -167,20 +173,15 @@ class TrainerSeq2Seq:
         """
         
         """
-        special_ids = {
-            "bos": self.bpe.bos_id,
-            "eos": self.bpe.eos_id,
-            "pad": self.bpe.pad_id
-        }
         block_size = self.train_loader.dataset.block_size
         max_tokens = self.max_tokens
         
         # ---------
-        # Randomly sample source inputs
+        # Randomly sample source inputs / target outputs
         # ----------
         dataset = self.train_loader.dataset
-        indices = torch.randint(len(dataset), (self.num_samples,))
-        batch = [dataset[i] for i in indices]
+        idxs = torch.randint(len(dataset), (self.num_samples,))
+        batch = [dataset[i] for i in idxs]
 
         # -- Pad samples
         source, target = dataset.collate_fn(batch)
@@ -191,7 +192,7 @@ class TrainerSeq2Seq:
         # ----------
         self.samples[step] = {"source": [], "output": [], "target": []}
 
-        output_ids = self.model.generate(source, special_ids, block_size, max_tokens)
+        output_ids = self.model.generate(source, self.bpe.special_ids, block_size, max_tokens)
 
         for i in range(len(output_ids)):
             source_text = self.bpe.ids_to_string(source[i].detach().cpu().tolist())
@@ -203,7 +204,7 @@ class TrainerSeq2Seq:
 
         print(f"\n\n======== (Step {step}) Outputs ========")
         for i in range(len(output_ids)):
-            print(f"\n\n---- Sample {i} ----")
+            print(f"\n\n---- Sample {i+1} ----")
             print(f"\n(Source): {self.samples[step]['source'][i]}")
             print(f"\n(Output): {self.samples[step]['output'][i]}")
             print(f"\n(Target): {self.samples[step]['target'][i]}")

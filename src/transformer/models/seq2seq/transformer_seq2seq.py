@@ -50,7 +50,13 @@ class TransformerSeq2Seq(nn.Module):
         # ----------
         self.out_proj = nn.Linear(d_model, vocab_size)
 
-    def forward(self, source: torch.Tensor, target: torch.Tensor):
+    def forward(
+            self, 
+            source: torch.Tensor, 
+            target: torch.Tensor,
+            enc_pad_mask: torch.Tensor,
+            dec_pad_mask: torch.Tensor
+    ):
         # ----------
         # Get token embeddings
         # ----------
@@ -72,19 +78,19 @@ class TransformerSeq2Seq(nn.Module):
         # ----------
         # Encoder
         # ----------
-        memory = self.encoder(source_emb)        # (B, T_src, d_model)
+        memory = self.encoder(source_emb, enc_pad_mask)    # (B, T_src, d_model)
 
         # ----------
         # Decoder
         # ----------
-        H = self.decoder(target_emb, memory)     # (B, T_tgt, d_model)
+        H = self.decoder(target_emb, memory, enc_pad_mask, dec_pad_mask)    # (B, T_tgt, d_model)
         
         # ----------
         # Output Projection
         # => W_\text{out} \in \mathcal{R}^{d_\text{model} \times V}
         # => \text{logits} = HW_\text{out},\quad \text{logits} \in \mathcal{R}^{B \times T_\text{tgt} \times V}
         # ----------
-        logits = self.out_proj(H)         # (B, T_tgt, V)
+        logits = self.out_proj(H)    # (B, T_tgt, V)
 
         return logits
     

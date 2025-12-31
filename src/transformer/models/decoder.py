@@ -63,14 +63,15 @@ class DecoderBlock(nn.Module):
     def forward(
             self, 
             target: torch.Tensor, 
-            memory: torch.Tensor | None = None,
-            enc_pad_mask: torch.Tensor | None = None
+            memory: torch.Tensor=None,
+            enc_pad_mask: torch.Tensor=None,
+            dec_pad_mask: torch.Tensor=None
     ) -> torch.Tensor:
         # ----------
         # Masked Self-Attention / Residual + Norm
         # ----------
         residual = target   # store residual
-        target = self.self_attn(target)
+        target = self.self_attn(target, dec_pad_mask)
         target = self.self_attn_drop(target)
         target = self.norm1(target + residual)
 
@@ -127,13 +128,14 @@ class Decoder(nn.Module):
     def forward(
             self, 
             target: torch.Tensor, 
-            memory: torch.Tensor | None = None,
-            enc_pad_mask: torch.Tensor | None = None
+            memory: torch.Tensor=None,
+            enc_pad_mask: torch.Tensor=None,
+            dec_pad_mask: torch.Tensor=None
     ) -> torch.Tensor:
         # ----------
         # Compute Hidden States
         # ----------
         for dec_block in self.dec_blocks:
-            target = dec_block(target, memory, enc_pad_mask)
+            target = dec_block(target, memory, enc_pad_mask, dec_pad_mask)
 
         return target

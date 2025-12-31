@@ -2,7 +2,7 @@
 # Run Configuration
 # ====================
 run: 
-  name: TransformerSeq2Seq
+  name: TransformerSeq2Seq_2
   runs_dir: ./runs/seq2seq
 
 # ====================
@@ -30,8 +30,9 @@ data:
   source_key: en
   target_key: fr
 
-  batch_size: 64
   vocab_size: 10000
+  vocab_path: runs/seq2seq/TransformerSeq2Seq/training/vocab.json
+  batch_size: 64
   block_size: 192
 
 # ====================

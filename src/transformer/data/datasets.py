@@ -2,12 +2,18 @@ import datasets
 import torch
 from torch.utils.data import Dataset
 from omegaconf import DictConfig
+from tqdm import tqdm
 
 from transformer.utils.tokenizer import BPETokenizer
 
 
 class Seq2SeqDataset(Dataset):
-    def __init__(self, bpe: BPETokenizer, data_config: DictConfig):
+    def __init__(
+            self, 
+            bpe: BPETokenizer, 
+            data_config: DictConfig,
+            vocab_path: str | None = None
+    ):
         self.bpe = bpe
         self.block_size = data_config.block_size
         self.batch_size = data_config.batch_size
@@ -18,7 +24,7 @@ class Seq2SeqDataset(Dataset):
         # Load dataset
         # ----------
         if data_config.dataset == "ted_talks":
-            self.train_data = []
+            self.data = []
 
             years = ["2014", "2015", "2016"]
             for year in years:
@@ -27,32 +33,45 @@ class Seq2SeqDataset(Dataset):
                     language_pair=(self.source_key, self.target_key),
                     year=year
                 )
-                self.train_data.extend(dataset["train"]["translation"])
+                self.data.extend(dataset["train"]["translation"])
 
             self.source_texts = []
             self.target_texts = []
 
-            for sample in self.train_data:
+            for sample in self.data:
                 self.source_texts.append(sample[self.source_key])
                 self.target_texts.append(sample[self.target_key])
 
         # ----------
         # Build vocabulary
         # ----------
-        all_texts = self.source_texts + self.target_texts
-        self.bpe.build_vocab(all_texts)
+        if vocab_path is not None:
+            print("Loading vocabulary...")
+            self.bpe.load_vocab(vocab_path)
 
-        # ----------
-        # Tokenize text
+        else:
+            print("Building vocabulary...")
+            all_texts = self.source_texts + self.target_texts
+            self.bpe.build_vocab(all_texts)
+
+        # ---------
+        # Encode text to bytes
         # ----------
         base_source_ids = [self.bpe.encode_text(text) for text in self.source_texts]
         base_target_ids = [self.bpe.encode_text(text) for text in self.target_texts]
 
-        self.source_ids = [self.bpe.tokenize(ids) for ids in base_source_ids]
-        self.target_ids = [self.bpe.tokenize(ids) for ids in base_target_ids]
+        # ---------
+        # Tokenize text
+        # ----------
+        self.source_ids = []
+        self.target_ids = []
+
+        for src_ids, tgt_ids in tqdm(zip(base_source_ids, base_target_ids), desc="Tokenizing text", total=len(base_source_ids)):
+            self.source_ids.append(self.bpe.tokenize(src_ids))
+            self.target_ids.append(self.bpe.tokenize(tgt_ids))
 
     def __len__(self):
-        return len(self.train_data)
+        return len(self.data)
 
     def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -144,12 +163,12 @@ class LMDataset:
         # ----------
         # Select random starting token index
         # ----------
-        indices = torch.randint(len(self.ids) - self.block_size - 1, (self.batch_size,))
+        idxs = torch.randint(len(self.ids) - self.block_size - 1, (self.batch_size,))
 
         # ----------
         # Extract batch of input/target token ids
         # ----------
-        inputs = torch.stack([self.ids[i : i+self.block_size] for i in indices])
-        targets = torch.stack([self.ids[i+1 : i+self.block_size+1] for i in indices])
+        inputs = torch.stack([self.ids[i : i+self.block_size] for i in idxs])
+        targets = torch.stack([self.ids[i+1 : i+self.block_size+1] for i in idxs])
 
         return inputs, targets

@@ -14,7 +14,7 @@ def load_config(config_path: str) -> DictConfig:
 
 def save_config(config: DictConfig, save_path: str):
     OmegaConf.save(config, save_path)
-
+    
 
 def main():
     # ---------
@@ -72,7 +72,7 @@ def main():
     # ---------
     # Generate / save samples
     # ----------
-    prompts = test_config.sample.prompts
+    prompts = test_config.sampling.prompts
 
     samples = {}
 
@@ -84,9 +84,9 @@ def main():
             prompt_ids=prompt_ids,
             device=device,
             block_size=train_config.data.block_size,
-            max_tokens=test_config.sample.max_tokens,
-            multinomial=test_config.sample.multinomial,
-            temperature=test_config.sample.temperature
+            max_tokens=test_config.sampling.max_tokens,
+            multinomial=test_config.sampling.multinomial,
+            temperature=test_config.sampling.temperature
         )
 
         output_text = bpe.ids_to_string(output_ids)
