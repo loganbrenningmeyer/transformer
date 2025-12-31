@@ -4,7 +4,7 @@ import torch
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.data.datasets import LMDataset
 from transformer.models.lm.transformer_lm import TransformerLM
 from transformer.training.trainer_lm import TrainerLM
@@ -60,10 +60,10 @@ def main():
         init_wandb(config.run.name)
 
     # ----------
-    # Initialize BPETokenizer
+    # Initialize BPEModel
     # ----------
     vocab_size = config.data.vocab_size
-    bpe = BPETokenizer(vocab_size)
+    bpe = BPEModel(vocab_size)
 
     # ----------
     # Create LMDataset / save vocab

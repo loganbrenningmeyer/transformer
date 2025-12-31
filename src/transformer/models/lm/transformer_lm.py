@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from transformer.models.decoder import Decoder
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.utils.position import sinusoidal_encoding
 
 

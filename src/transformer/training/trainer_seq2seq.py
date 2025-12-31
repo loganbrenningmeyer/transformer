@@ -8,7 +8,7 @@ from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
 
 
@@ -25,7 +25,7 @@ class TrainerSeq2Seq:
     def __init__(
             self,
             model: TransformerSeq2Seq,
-            bpe: BPETokenizer,
+            bpe: BPEModel,
             optimizer: Optimizer,
             train_loader: DataLoader,
             device: torch.device,
@@ -107,7 +107,7 @@ class TrainerSeq2Seq:
         target_in = target[:, :-1]    # (B, T_tgt_in) : [<bos>, y_1, y_2, ..., y_T]
         target_out = target[:, 1:]    # (B, T_tgt_out): [y_1, y_2, ..., y_T, <eos>]
 
-        # ---------
+        # ----------
         # Define Encoder/Decoder padding masks 
         # ----------
         enc_pad_mask = (source == self.bpe.pad_id)
@@ -176,7 +176,7 @@ class TrainerSeq2Seq:
         block_size = self.train_loader.dataset.block_size
         max_tokens = self.max_tokens
         
-        # ---------
+        # ----------
         # Randomly sample source inputs / target outputs
         # ----------
         dataset = self.train_loader.dataset

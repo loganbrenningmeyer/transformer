@@ -4,13 +4,13 @@ from torch.utils.data import Dataset
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 
 
 class Seq2SeqDataset(Dataset):
     def __init__(
             self, 
-            bpe: BPETokenizer, 
+            bpe: BPEModel, 
             data_config: DictConfig,
             vocab_path: str | None = None
     ):
@@ -54,13 +54,13 @@ class Seq2SeqDataset(Dataset):
             all_texts = self.source_texts + self.target_texts
             self.bpe.build_vocab(all_texts)
 
-        # ---------
+        # ----------
         # Encode text to bytes
         # ----------
         base_source_ids = [self.bpe.encode_text(text) for text in self.source_texts]
         base_target_ids = [self.bpe.encode_text(text) for text in self.target_texts]
 
-        # ---------
+        # ----------
         # Tokenize text
         # ----------
         self.source_ids = []
@@ -126,7 +126,7 @@ class Seq2SeqDataset(Dataset):
 
 
 class LMDataset:
-    def __init__(self, bpe: BPETokenizer, data_config: DictConfig):
+    def __init__(self, bpe: BPEModel, data_config: DictConfig):
         self.block_size = data_config.block_size
         self.batch_size = data_config.batch_size
 

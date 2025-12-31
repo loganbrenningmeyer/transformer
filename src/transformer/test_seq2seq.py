@@ -6,7 +6,7 @@ import torch
 from omegaconf import OmegaConf, DictConfig
 
 from transformer.data.datasets import Seq2SeqDataset
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
 
 
@@ -19,7 +19,7 @@ def save_config(config: DictConfig, save_path: str):
 
 
 def main():
-    # ---------
+    # ----------
     # Parse arguments / load config
     # ----------
     parser = argparse.ArgumentParser()
@@ -31,7 +31,7 @@ def main():
     train_dir = os.path.join(test_config.run.run_dir, "training")
     train_config = load_config(os.path.join(train_dir, "config.yml"))
 
-    # ---------
+    # ----------
     # Create testing dirs / save config
     # ----------
     test_dir = os.path.join(test_config.run.run_dir, "testing", test_config.run.name)
@@ -39,18 +39,18 @@ def main():
 
     save_config(test_config, os.path.join(test_dir, 'config.yml'))
 
-    # ---------
+    # ----------
     # Set device
     # ----------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # ---------
+    # ----------
     # Load Seq2SeqDataset w/ training vocab
     # ----------
     vocab_size = train_config.data.vocab_size
     vocab_path = os.path.join(train_dir, "vocab.json")
     
-    bpe = BPETokenizer(vocab_size)
+    bpe = BPEModel(vocab_size)
 
     dataset = Seq2SeqDataset(
         bpe=bpe,
@@ -58,7 +58,7 @@ def main():
         vocab_path=vocab_path
     )
 
-    # ---------
+    # ----------
     # Load TransformerSeq2Seq Model
     # ----------
     model = TransformerSeq2Seq(
@@ -77,7 +77,7 @@ def main():
     model.to(device)
     model.eval() 
 
-    # ---------
+    # ----------
     # Randomly sample source inputs / target outputs
     # ----------
     idxs = random.sample(range(len(dataset)), test_config.sampling.num_samples)
@@ -87,7 +87,7 @@ def main():
     source, target = dataset.collate_fn(batch)
     source = source.to(device)
 
-    # ---------
+    # ----------
     # Generate batch of samples
     # ----------
     samples = {"source": [], "output": [], "target": []}

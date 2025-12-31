@@ -7,7 +7,7 @@ from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.models.lm.transformer_lm import TransformerLM
 from transformer.data.datasets import LMDataset
 
@@ -25,7 +25,7 @@ class TrainerLM:
     def __init__(
             self,
             model: TransformerLM,
-            bpe: BPETokenizer,
+            bpe: BPEModel,
             optimizer: Optimizer,
             dataset: LMDataset,
             device: torch.device,

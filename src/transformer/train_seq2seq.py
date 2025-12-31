@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.utils.tokenizer import BPETokenizer
+from transformer.utils.tokenizer import BPEModel
 from transformer.data.datasets import Seq2SeqDataset
 from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
 from transformer.training.trainer_seq2seq import TrainerSeq2Seq
@@ -61,12 +61,12 @@ def main():
         init_wandb(config.run.name)
 
     # ----------
-    # Initialize BPETokenizer
+    # Initialize BPEModel
     # ----------
     vocab_size = config.data.vocab_size
     vocab_path = config.data.vocab_path     # (Optional): Precomputed vocab
 
-    bpe = BPETokenizer(vocab_size)
+    bpe = BPEModel(vocab_size)
 
     # ----------
     # Create DataLoader / save vocab
