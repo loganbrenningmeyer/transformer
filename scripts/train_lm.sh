@@ -1,4 +1,3 @@
 set -ex
 
-CONFIG=$1
-python -m transformer.train_lm --config "$CONFIG"
+python -m transformer.train_lm --config configs/train_lm.yml

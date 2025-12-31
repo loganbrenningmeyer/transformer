@@ -25,11 +25,26 @@ class BPETokenizer:
     def __getitem__(self, token):
         return self.vocab[token]
     
-    def encode_text(self, text: str) -> list[int]:
+    def load_vocab(self, vocab_path: str):
         """
-        Converts a text string into a list of UTF-8 bytes
+        
         """
-        return list(text.encode("utf-8"))
+        with open(vocab_path, 'r') as f:
+            vocab_data = json.load(f)
+
+        # ---------
+        # Initialize vocab with bytes 0-255
+        # ----------
+        self.vocab = {idx: bytes([idx]) for idx in range(256)}
+
+        # ---------
+        # Read merges from json
+        # ----------
+        merges = vocab_data["merges"]
+
+        for merge in merges:
+            self.merges[tuple(merge["pair"])] = merge["id"]
+            self.vocab[merge["id"]] = self.encode_text(merge["text"])
 
     def build_vocab(self, texts: list[str]):
         """
@@ -50,7 +65,6 @@ class BPETokenizer:
         # Initialize vocab with bytes 0-255
         # ----------
         self.vocab = {idx: bytes([idx]) for idx in range(256)}
-        self.merges = {}
         curr_size = 256
 
         merged_ids = ids
@@ -132,6 +146,12 @@ class BPETokenizer:
             tokenized_ids = self.merge_pair(tokenized_ids, pair, id)
 
         return tokenized_ids
+    
+    def encode_text(self, text: str) -> list[int]:
+        """
+        Converts a text string into a list of UTF-8 bytes
+        """
+        return text.encode("utf-8")
     
     def ids_to_string(self, ids: list[int]):
         """

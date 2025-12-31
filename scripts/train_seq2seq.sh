@@ -1,4 +1,3 @@
 set -ex
 
-CONFIG=$1
-python -m transformer.train_seq2seq --config "$CONFIG"
+python -m transformer.train_seq2seq --config configs/train_seq2seq.yml

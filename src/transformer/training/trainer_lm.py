@@ -162,7 +162,7 @@ class TrainerLM:
         # ----------
         # Tokenize prompt
         # ----------
-        prompt_ids = list(self.prompt.encode("utf-8"))
+        prompt_ids = self.bpe.encode_text(self.prompt)
         prompt_ids = self.bpe.tokenize(prompt_ids)
 
         # ----------
