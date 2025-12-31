@@ -195,9 +195,9 @@ class TrainerSeq2Seq:
         output_ids = self.model.generate(source, self.bpe.special_ids, block_size, max_tokens)
 
         for i in range(len(output_ids)):
-            source_text = self.bpe.ids_to_string(source[i].detach().cpu().tolist())
-            output_text = self.bpe.ids_to_string(output_ids[i].detach().cpu().tolist())
-            target_text = self.bpe.ids_to_string(target[i].detach().cpu().tolist())
+            source_text = self.bpe.decode(source[i].detach().cpu().tolist())
+            output_text = self.bpe.decode(output_ids[i].detach().cpu().tolist())
+            target_text = self.bpe.decode(target[i].detach().cpu().tolist())
             self.samples[step]["source"].append(source_text)
             self.samples[step]["output"].append(output_text)
             self.samples[step]["target"].append(target_text)

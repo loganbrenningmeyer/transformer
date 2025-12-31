@@ -1,7 +1,7 @@
 import json
 import heapq
 from tqdm import tqdm
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 
 class BPETrainer:
@@ -51,13 +51,17 @@ class BPETrainer:
         # ----------
         # Build vocabulary
         # ----------
-        while self.curr_size != self.vocab_size - 3:
-            pair, new_id = self.create_merge()
-            # -- If heap is empty, end early
-            if new_id is None:
-                break
-            # -- Apply merge
-            self.apply_merge(pair, new_id)
+        with tqdm(desc="Building vocabulary", total=self.vocab_size - 3) as pbar:
+
+            while self.curr_size != self.vocab_size - 3:
+                pair, new_id = self.create_merge()
+                # -- If heap is empty, end early
+                if new_id is None:
+                    break
+                # -- Apply merge
+                self.apply_merge(pair, new_id)
+
+                pbar.update(1)
 
         return self.vocab, self.merges
 
@@ -128,7 +132,7 @@ class BPETrainer:
                 # Decrement removed pairs / increment added pairs
                 # ----------
                 self.counts[pair] -= 1
-                heapq.heappush(self.heap, (-self.counts[pair]), pair)
+                heapq.heappush(self.heap, (-self.counts[pair], pair))
         
                 a, b = pair
 
@@ -211,7 +215,6 @@ class BPETrainer:
         return text.encode("utf-8")
 
 
-
 class BPETokenizer:
     def __init__(self, ids: bytes, merges: dict):
         self.heap = []
@@ -241,22 +244,24 @@ class BPETokenizer:
         """
         
         """
-        token_ids = [self.tokens[0]]
+        tokenized_ids = [self.tokens[0]]
 
         j = self.next[0]
 
         while j != -1:
-            token_ids.append(self.tokens[j])
+            tokenized_ids.append(self.tokens[j])
             j = self.next[j]
 
-        return token_ids
+        return tokenized_ids
     
-    def merge_heap(self):
+    def tokenize(self):
         """
         
         """
         while len(self.heap) != 0:
             self.merge_pair()
+
+        return self.get_tokenized_ids()
 
     def merge_pair(self):
         """
@@ -402,10 +407,11 @@ class BPEModel:
         
         """
         ids = self._text_to_bytes(text)
+
         tokenizer = BPETokenizer(ids, self.merges)
-        tokenizer.merge_heap()
+        tokenized_ids = tokenizer.tokenize()
         
-        return tokenizer.get_tokenized_ids()
+        return tokenized_ids
 
     def decode(self, ids: list[int]):
         """
@@ -441,7 +447,7 @@ class BPEModel:
 
         for merge in merges:
             self.merges[tuple(merge["pair"])] = {"id": merge["id"], "rank": merge["rank"]}
-            self.vocab[merge["id"]] = self.encode_text(merge["text"])
+            self.vocab[merge["id"]] = self.encode(merge["text"])
 
     def save(self, save_path: str):
         """
@@ -452,7 +458,7 @@ class BPEModel:
                 "pair": pair,
                 "id": self.merges[pair]["id"],
                 "rank": self.merges[pair]["rank"],
-                "text": self.ids_to_string(pair)
+                "text": self.decode(pair)
             }
             for pair in self.merges
         ]
@@ -461,5 +467,5 @@ class BPEModel:
         with open(save_path, 'w') as f:
             json.dump(vocab_data, f, indent=4)
 
-    def _text_to_bytes(text: str):
+    def _text_to_bytes(self, text: str):
         return text.encode("utf-8")

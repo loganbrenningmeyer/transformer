@@ -46,29 +46,17 @@ class Seq2SeqDataset(Dataset):
         # Build vocabulary
         # ----------
         if vocab_path is not None:
-            print("Loading vocabulary...")
-            self.bpe.load_vocab(vocab_path)
+            self.bpe.load(vocab_path)
 
         else:
-            print("Building vocabulary...")
             all_texts = self.source_texts + self.target_texts
             self.bpe.build_vocab(all_texts)
 
         # ----------
-        # Encode text to bytes
-        # ----------
-        base_source_ids = [self.bpe.encode_text(text) for text in self.source_texts]
-        base_target_ids = [self.bpe.encode_text(text) for text in self.target_texts]
-
-        # ----------
         # Tokenize text
         # ----------
-        self.source_ids = []
-        self.target_ids = []
-
-        for src_ids, tgt_ids in tqdm(zip(base_source_ids, base_target_ids), desc="Tokenizing text", total=len(base_source_ids)):
-            self.source_ids.append(self.bpe.tokenize(src_ids))
-            self.target_ids.append(self.bpe.tokenize(tgt_ids))
+        self.source_ids = [self.bpe.encode(text) for text in self.source_texts]
+        self.target_ids = [self.bpe.encode(text) for text in self.target_texts]
 
     def __len__(self):
         return len(self.data)

@@ -49,7 +49,7 @@ def main():
     vocab_path = os.path.join(train_dir, "vocab.json")
 
     bpe = BPEModel(vocab_size)
-    bpe.load_vocab(vocab_path)
+    bpe.load(vocab_path)
 
     # ----------
     # Load TransformerLM model
@@ -77,8 +77,7 @@ def main():
     samples = {}
 
     for prompt in prompts:
-        prompt_ids = bpe.encode_text(prompt)
-        prompt_ids = bpe.tokenize(prompt_ids)
+        prompt_ids = bpe.encode(prompt)
 
         output_ids = model.generate(
             prompt_ids=prompt_ids,
@@ -89,7 +88,7 @@ def main():
             temperature=test_config.sampling.temperature
         )
 
-        output_text = bpe.ids_to_string(output_ids)
+        output_text = bpe.decode(output_ids)
         samples[prompt] = output_text
 
         print(

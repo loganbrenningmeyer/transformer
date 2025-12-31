@@ -162,8 +162,7 @@ class TrainerLM:
         # ----------
         # Tokenize prompt
         # ----------
-        prompt_ids = self.bpe.encode_text(self.prompt)
-        prompt_ids = self.bpe.tokenize(prompt_ids)
+        prompt_ids = self.bpe.encode(self.prompt)
 
         # ----------
         # Generate output ids / convert to text
@@ -177,7 +176,7 @@ class TrainerLM:
             temperature=self.temperature
         )
 
-        output_text = self.bpe.ids_to_string(output_ids)
+        output_text = self.bpe.decode(output_ids)
         self.samples[step] = output_text
 
         print(
