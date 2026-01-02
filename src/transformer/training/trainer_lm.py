@@ -3,6 +3,7 @@ import json
 import wandb
 import torch
 import torch.nn.functional as F
+from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
@@ -27,8 +28,9 @@ class TrainerLM:
             model: TransformerLM,
             bpe: BPEModel,
             optimizer: Optimizer,
-            dataset: LMDataset,
             device: torch.device,
+            train_loader: DataLoader,
+            valid_loader: DataLoader,
             train_dir: str,
             logging_config: DictConfig,
             sample_config: DictConfig
@@ -36,16 +38,17 @@ class TrainerLM:
         self.model = model
         self.bpe = bpe
         self.optimizer = optimizer
-        self.dataset = dataset
         self.device = device
+        self.train_loader = train_loader
+        self.valid_loader = valid_loader
         self.train_dir = train_dir
 
         # -- Logging parameters
         self.wandb_enabled = logging_config.wandb.enable
         self.wandb_save_ckpt = logging_config.wandb.save_ckpt
-        self.loss_interval = logging_config.loss_interval
-        self.ckpt_interval = logging_config.ckpt_interval
-        self.sample_interval = logging_config.sample_interval
+        self.loss_steps = logging_config.loss_steps
+        self.ckpt_steps = logging_config.ckpt_steps
+        self.sample_steps = logging_config.sample_steps
 
         # -- Sampling parameters
         self.prompts = sample_config.prompts
@@ -71,18 +74,27 @@ class TrainerLM:
                 # ----------
                 # Perform train step
                 # ----------
-                input_ids, target_ids = self.dataset.get_batch()
-                input_ids, target_ids = input_ids.to(self.device), target_ids.to(self.device)
+                for input_ids, target_ids in self.train_loader:
+                    input_ids, target_ids = input_ids.to(self.device), target_ids.to(self.device)
 
-                loss = self.train_step(input_ids, target_ids)
+                    loss = self.train_step(input_ids, target_ids)
 
-                # ----------
-                # Log loss / save checkpoint
-                # ----------
-                self.log_and_save(loss.item(), step)
+                    # ----------
+                    # Log loss / samples
+                    # ----------
+                    self.log_train_step(loss.item(), step, "train")
 
-                step += 1
-                pbar.update(1)
+                    if step > 0 and step % self.ckpt_steps == 0:
+                        self.save_checkpoint(step)
+
+                    # ----------
+                    # Test validation
+                    # ----------
+                    valid_loss = self.validate()
+                    self.log_loss(valid_loss, step, "valid")
+
+                    step += 1
+                    pbar.update(1)
 
         self.save_samples()
 
@@ -111,6 +123,29 @@ class TrainerLM:
         self.optimizer.step()
 
         return loss
+    
+    @torch.no_grad()
+    def validate(self):
+        """
+        
+        """
+        self.model.eval()
+
+        valid_loss = 0.0
+        num_batches = 0
+
+        for input_ids, target_ids in tqdm(self.valid_loader, desc="Validation"):
+            input_ids, target_ids = input_ids.to(self.device), target_ids.to(self.device)
+
+            logits = self.model(input_ids)
+            loss = self.compute_loss(logits, target_ids)
+
+            valid_loss += loss.item()
+            num_batches += 1
+
+        valid_loss /= num_batches
+
+        return valid_loss
 
     def compute_loss(self, logits: torch.Tensor, target_ids: torch.Tensor):
         """
@@ -120,12 +155,12 @@ class TrainerLM:
         # Flatten vocab logits / target ids for each token
         # ----------
         B, T, V = logits.shape
-        logits = logits.reshape(B*T, V)
-        target_ids = target_ids.reshape(B*T)
+        logits = logits.view(B*T, V)
+        target_ids = target_ids.view(B*T)
 
         return F.cross_entropy(logits, target_ids)
     
-    def log_and_save(self, loss: float, step: int):
+    def log_train_step(self, loss: float, step: int, label: str):
         """
         Logs batch loss, logs/saves samples, and saves checkpoint 
         if at the specified step count
@@ -133,27 +168,21 @@ class TrainerLM:
         # ----------
         # Log step loss
         # ----------
-        if step > 0 and step % self.loss_interval == 0:
-            self.log_loss(loss, step)
+        if step > 0 and step % self.loss_steps == 0:
+            self.log_loss(loss, step, label)
 
         # ----------
         # Generate / log sample
         # ----------
-        if step > 0 and step % self.sample_interval == 0:
+        if step > 0 and step % self.sample_steps == 0:
             self.log_sample(step)
 
-        # ----------
-        # Save checkpoint
-        # ----------
-        if step > 0 and step % self.ckpt_interval == 0:
-            self.save_and_log_checkpoint(step)
-
-    def log_loss(self, loss: float, step: int):
+    def log_loss(self, loss: float, step: int, label: str):
         """
         Logs loss to wandb dashboard
         """
         if self.wandb_enabled:
-            wandb.log({"loss": loss}, step=step)
+            wandb.log({f"{label} loss": loss}, step=step)
 
     def log_sample(self, step: int):
         """
@@ -198,7 +227,7 @@ class TrainerLM:
         with open(save_path, 'w') as f:
             json.dump(self.samples, f, indent=4)
 
-    def save_and_log_checkpoint(self, step: int):
+    def save_checkpoint(self, step: int):
         """
         Saves model checkpoint at ckpt_path and logs artifact to wandb.
         """

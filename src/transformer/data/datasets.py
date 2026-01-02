@@ -111,51 +111,74 @@ class Seq2SeqDataset(Dataset):
             target[i, :len(base_target)] = base_target
 
         return (source, target)
+    
 
-
-class LMDataset:
-    def __init__(self, bpe: BPEModel, data_config: DictConfig):
-        self.block_size = data_config.block_size
-        self.batch_size = data_config.batch_size
-
-        # ----------
-        # Load dataset
-        # ----------
-        if data_config.dataset == "tiny_shakespeare":
-            dataset = datasets.load_dataset("karpathy/tiny_shakespeare")
-            self.train_text = dataset["train"]["text"][0]
-            self.valid_text = dataset["validation"]["text"][0]
-            self.test_text = dataset["test"]["text"][0]
+class LMDataset(Dataset):
+    def __init__(self, text: str, bpe: BPEModel, block_size: int):
+        self.bpe = bpe
+        self.block_size = block_size
 
         # ----------
-        # Build vocabulary
+        # Tokenize text once
         # ----------
-        bpe.build_vocab([self.train_text])
+        ids = bpe.encode(text)
+        self.ids = torch.tensor(ids, dtype=torch.long)
 
-        # ----------
-        # Tokenize text
-        # ----------
-        self.ids = torch.tensor(bpe.encode(self.train_text), dtype=torch.long)
+    def __len__(self):
+        return len(self.ids) - self.block_size
+    
+    def __getitem__(self, idx):
+        x = self.ids[idx : idx + self.block_size]
+        y = self.ids[idx + 1 : idx + self.block_size + 1]
 
-    def get_batch(self):
-        """
+        return x, y
+
+
+# class LMDataset:
+#     def __init__(self, bpe: BPEModel, data_config: DictConfig):
+#         self.block_size = data_config.block_size
+#         self.batch_size = data_config.batch_size
+
+#         # ----------
+#         # Load dataset
+#         # ----------
+#         if data_config.dataset == "tiny_shakespeare":
+#             dataset = datasets.load_dataset("karpathy/tiny_shakespeare")
+#             self.train_text = dataset["train"]["text"][0]
+#             self.valid_text = dataset["validation"]["text"][0]
+#             self.test_text = dataset["test"]["text"][0]
+
+#         # ----------
+#         # Build vocabulary
+#         # ----------
+#         bpe.build_vocab([self.train_text])
+
+#         # ----------
+#         # Tokenize text
+#         # ----------
+#         self.ids = torch.tensor(bpe.encode(self.train_text), dtype=torch.long)
+
+#     def get_batch(self):
+#         """
         
         
-        Args:
+#         Args:
         
         
-        Returns:
+#         Returns:
         
-        """
-        # ----------
-        # Select random starting token index
-        # ----------
-        idxs = torch.randint(len(self.ids) - self.block_size - 1, (self.batch_size,))
+#         """
+#         # ----------
+#         # Select random starting token index
+#         # ----------
+#         idxs = torch.randint(len(self.ids) - self.block_size - 1, (self.batch_size,))
 
-        # ----------
-        # Extract batch of input/target token ids
-        # ----------
-        inputs = torch.stack([self.ids[i : i+self.block_size] for i in idxs])
-        targets = torch.stack([self.ids[i+1 : i+self.block_size+1] for i in idxs])
+#         # ----------
+#         # Extract batch of input/target token ids
+#         # ----------
+#         inputs = torch.stack([self.ids[i : i+self.block_size] for i in idxs])
+#         targets = torch.stack([self.ids[i+1 : i+self.block_size+1] for i in idxs])
 
-        return inputs, targets
+#         return inputs, targets
+    
+

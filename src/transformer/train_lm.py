@@ -1,11 +1,13 @@
 import os
 import argparse
 import torch
+from torch.utils.data import DataLoader
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.tokenization.bpe.model import BPEModel
 from transformer.data.datasets import LMDataset
+from transformer.data.registry import LM_BUILDERS
+from transformer.tokenization.bpe.model import BPEModel
 from transformer.models.architectures.transformer_lm import TransformerLM
 from transformer.training.trainer_lm import TrainerLM
 
@@ -60,18 +62,30 @@ def main():
         init_wandb(config.run.name)
 
     # ----------
-    # Initialize BPEModel
+    # Load dataset training splits
+    # ----------
+    splits = LM_BUILDERS[config.data.dataset]()
+    train_text, valid_text = splits["train"], splits["valid"]
+
+    # ----------
+    # Initialize BPEModel / build vocab on train 
     # ----------
     vocab_size = config.data.vocab_size
+    vocab_path = os.path.join(train_dir, "vocab.json")
+
     bpe = BPEModel(vocab_size)
 
-    # ----------
-    # Create LMDataset / save vocab
-    # ----------
-    dataset = LMDataset(bpe, config.data)
-
-    vocab_path = os.path.join(train_dir, "vocab.json")
+    bpe.build_vocab([train_text])
     bpe.save(vocab_path)
+
+    # ----------
+    # Create LMDatasets / DataLoaders
+    # ----------
+    train_dataset = LMDataset(train_text, bpe, config.data.block_size)
+    valid_dataset = LMDataset(valid_text, bpe, config.data.block_size)
+
+    train_loader = DataLoader(train_dataset, config.data.batch_size, shuffle=True)
+    valid_loader = DataLoader(valid_dataset, config.data.batch_size, shuffle=False)
 
     # ----------
     # Initialize TransformerLM model
@@ -99,8 +113,9 @@ def main():
         model=model,
         bpe=bpe,
         optimizer=optimizer,
-        dataset=dataset,
         device=device,
+        train_loader=train_loader,
+        valid_loader=valid_loader,
         train_dir=train_dir,
         logging_config=config.logging,
         sample_config=config.sampling
