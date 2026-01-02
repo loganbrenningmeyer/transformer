@@ -5,8 +5,9 @@ from torch.utils.data import DataLoader
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.tokenization.bpe.model import BPEModel
 from transformer.data.datasets import Seq2SeqDataset
+from transformer.data.registry import SEQ2SEQ_BUILDERS
+from transformer.tokenization.bpe.model import BPEModel
 from transformer.models.architectures.transformer_seq2seq import TransformerSeq2Seq
 from transformer.training.trainer_seq2seq import TrainerSeq2Seq
 
@@ -61,27 +62,37 @@ def main():
         init_wandb(config.run.name)
 
     # ----------
+    # Load dataset training splits
+    # ----------
+    splits = SEQ2SEQ_BUILDERS[config.data.dataset](config.data)
+
+    # ----------
     # Initialize BPEModel
     # ----------
-    vocab_size = config.data.vocab_size
-    vocab_path = config.data.vocab_path     # (Optional): Precomputed vocab
+    vocab_size = config.tokenizer.vocab_size
+    vocab_path = config.tokenizer.vocab_path
 
     bpe = BPEModel(vocab_size)
+
+    if vocab_path is not None:
+        bpe.load(vocab_path)
+    else:
+        train_texts = [src for src, _ in splits["train"]] + [tgt for _, tgt in splits["train"]]
+        bpe.build_vocab(train_texts)
+        
+    bpe.save(os.path.join(train_dir, "vocab.json"))
 
     # ----------
     # Create DataLoader / save vocab
     # ----------
-    train_dataset = Seq2SeqDataset(bpe, config.data, vocab_path)
+    context_length = config.data.context_length
+    batch_size = config.data.batch_size
 
-    train_loader = DataLoader(
-        train_dataset, 
-        batch_size=config.data.batch_size,
-        shuffle=True,
-        collate_fn=train_dataset.collate_fn
-    )
+    train_dataset = Seq2SeqDataset(splits["train"], bpe, context_length)
+    valid_dataset = Seq2SeqDataset(splits["valid"], bpe, context_length)
 
-    vocab_path = os.path.join(train_dir, "vocab.json")
-    bpe.save(vocab_path)
+    train_loader = DataLoader(train_dataset, batch_size, shuffle=True, collate_fn=train_dataset.collate_fn)
+    valid_loader = DataLoader(valid_dataset, batch_size, shuffle=False, collate_fn=valid_dataset.collate_fn)
 
     # ----------
     # Initialize TransformerSeq2Seq model
@@ -94,7 +105,8 @@ def main():
         num_encoder_layers=config.model.num_encoder_layers,
         num_decoder_layers=config.model.num_decoder_layers,
         dropout=config.model.dropout,
-        vocab_size=vocab_size
+        vocab_size=vocab_size,
+        context_length=config.data.context_length
     )
     model.to(device)
 
@@ -110,8 +122,9 @@ def main():
         model=model,
         bpe=bpe,
         optimizer=optimizer,
-        train_loader=train_loader,
         device=device,
+        train_loader=train_loader,
+        valid_loader=valid_loader,
         train_dir=train_dir,
         logging_config=config.logging,
         sample_config=config.sampling

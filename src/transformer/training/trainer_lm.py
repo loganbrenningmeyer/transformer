@@ -7,10 +7,10 @@ from torch.utils.data import DataLoader
 from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
+from itertools import cycle
 
 from transformer.tokenization.bpe.model import BPEModel
 from transformer.models.architectures.transformer_lm import TransformerLM
-from transformer.data.datasets import LMDataset
 
 
 class TrainerLM:
@@ -47,6 +47,7 @@ class TrainerLM:
         self.wandb_enabled = logging_config.wandb.enable
         self.wandb_save_ckpt = logging_config.wandb.save_ckpt
         self.loss_steps = logging_config.loss_steps
+        self.valid_steps = logging_config.valid_steps
         self.ckpt_steps = logging_config.ckpt_steps
         self.sample_steps = logging_config.sample_steps
 
@@ -64,37 +65,39 @@ class TrainerLM:
         Parameters:
             steps (int): Total number of training steps
         """
+        self.model.train()
+
+        train_iter = cycle(self.train_loader)
         step = 1
 
         with tqdm(total=steps, initial=step, desc="Training TransformerLM") as pbar:
 
             while step <= steps:
-                self.model.train()
+                # ----------
+                # Perform training step
+                # ----------
+                input_ids, target_ids = next(train_iter)
+                input_ids, target_ids = input_ids.to(self.device), target_ids.to(self.device)
+
+                loss = self.train_step(input_ids, target_ids)
 
                 # ----------
-                # Perform train step
+                # Log loss / samples
                 # ----------
-                for input_ids, target_ids in self.train_loader:
-                    input_ids, target_ids = input_ids.to(self.device), target_ids.to(self.device)
+                self.log_train_step(loss.item(), step)
 
-                    loss = self.train_step(input_ids, target_ids)
+                if step > 0 and step % self.ckpt_steps == 0:
+                    self.save_checkpoint(step)
 
-                    # ----------
-                    # Log loss / samples
-                    # ----------
-                    self.log_train_step(loss.item(), step, "train")
-
-                    if step > 0 and step % self.ckpt_steps == 0:
-                        self.save_checkpoint(step)
-
-                    # ----------
-                    # Test validation
-                    # ----------
+                # ----------
+                # Test validation
+                # ----------
+                if step > 0 and step % self.valid_steps == 0:
                     valid_loss = self.validate()
                     self.log_loss(valid_loss, step, "valid")
 
-                    step += 1
-                    pbar.update(1)
+                step += 1
+                pbar.update(1)
 
         self.save_samples()
 
@@ -108,6 +111,7 @@ class TrainerLM:
         Returns:
         
         """
+        self.model.train()
         self.optimizer.zero_grad()
 
         # ----------
@@ -155,12 +159,12 @@ class TrainerLM:
         # Flatten vocab logits / target ids for each token
         # ----------
         B, T, V = logits.shape
-        logits = logits.view(B*T, V)
-        target_ids = target_ids.view(B*T)
+        logits = logits.reshape(B*T, V)
+        target_ids = target_ids.reshape(B*T)
 
         return F.cross_entropy(logits, target_ids)
     
-    def log_train_step(self, loss: float, step: int, label: str):
+    def log_train_step(self, loss: float, step: int):
         """
         Logs batch loss, logs/saves samples, and saves checkpoint 
         if at the specified step count
@@ -169,13 +173,13 @@ class TrainerLM:
         # Log step loss
         # ----------
         if step > 0 and step % self.loss_steps == 0:
-            self.log_loss(loss, step, label)
+            self.log_loss(loss, step, "train")
 
         # ----------
         # Generate / log sample
         # ----------
         if step > 0 and step % self.sample_steps == 0:
-            self.log_sample(step)
+            self.log_samples(step)
 
     def log_loss(self, loss: float, step: int, label: str):
         """
@@ -184,7 +188,7 @@ class TrainerLM:
         if self.wandb_enabled:
             wandb.log({f"{label} loss": loss}, step=step)
 
-    def log_sample(self, step: int):
+    def log_samples(self, step: int):
         """
         Generates sample text from input prompt and logs to wandb
         """
@@ -203,7 +207,6 @@ class TrainerLM:
             output_ids = self.model.generate(
                 prompt_ids=prompt_ids,
                 device=self.device,
-                block_size=self.dataset.block_size,
                 max_tokens=self.max_tokens,
                 multinomial=self.multinomial,
                 temperature=self.temperature

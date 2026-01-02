@@ -45,7 +45,7 @@ def main():
     # ----------
     # Load vocab
     # ----------
-    vocab_size = train_config.data.vocab_size
+    vocab_size = train_config.tokenizer.vocab_size
     vocab_path = os.path.join(train_dir, "vocab.json")
 
     bpe = BPEModel(vocab_size)
@@ -59,7 +59,8 @@ def main():
         num_heads=train_config.model.num_heads,
         num_decoder_layers=train_config.model.num_decoder_layers,
         dropout=train_config.model.dropout,
-        vocab_size=vocab_size
+        vocab_size=vocab_size,
+        context_length=train_config.data.context_length
     )
 
     ckpt_path = os.path.join(train_dir, "checkpoints", test_config.run.checkpoint)
@@ -82,7 +83,6 @@ def main():
         output_ids = model.generate(
             prompt_ids=prompt_ids,
             device=device,
-            block_size=train_config.data.block_size,
             max_tokens=test_config.sampling.max_tokens,
             multinomial=test_config.sampling.multinomial,
             temperature=test_config.sampling.temperature

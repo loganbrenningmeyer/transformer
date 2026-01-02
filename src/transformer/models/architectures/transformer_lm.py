@@ -22,10 +22,12 @@ class TransformerLM(nn.Module):
             num_decoder_layers: int,
             dropout: float,
             vocab_size: int,
+            context_length: int
     ):
         super().__init__()
 
         self.d_model = d_model
+        self.context_length = context_length
 
         # ----------
         # Embedding Table
@@ -60,7 +62,6 @@ class TransformerLM(nn.Module):
         self, 
         prompt_ids: list[int], 
         device: torch.device,
-        block_size: int, 
         max_tokens: int=256,
         multinomial: bool=True,
         temperature: float=1.0
@@ -86,7 +87,7 @@ class TransformerLM(nn.Module):
             # ----------
             # Crop to block_size (T = min(T_prompt, block_size))
             # ----------
-            context_ids = output_ids[:, -block_size:]      # (1, T)
+            context_ids = output_ids[:, -self.context_length:]      # (1, T)
 
             # ----------
             # Predict next token logits

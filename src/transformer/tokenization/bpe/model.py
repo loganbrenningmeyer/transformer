@@ -74,11 +74,17 @@ class BPEModel:
         # ----------
         # Read merges from json
         # ----------
-        merges = vocab_data["merges"]
+        for merge in vocab_data["merges"]:
+            pair = tuple(merge["pair"])
+            a, b = pair
+            id, rank = merge["id"], merge["rank"]
 
-        for merge in merges:
-            self.merges[tuple(merge["pair"])] = {"id": merge["id"], "rank": merge["rank"]}
-            self.vocab[merge["id"]] = self.encode(merge["text"])
+            self.merges[pair] = {"id": id, "rank": rank}
+            self.vocab[id] = self.vocab[a] + self.vocab[b]
+
+        self.vocab[self.pad_id] = b"<pad>"
+        self.vocab[self.bos_id] = b"<bos>"
+        self.vocab[self.eos_id] = b"<eos>"
 
     def save(self, save_path: str):
         """

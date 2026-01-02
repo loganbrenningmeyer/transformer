@@ -22,11 +22,8 @@ def load_ted_talks(data_config: DictConfig) -> dict:
                 year=year
             )
 
-            source_texts = dataset["train"]["translation"][source_key]
-            target_texts = dataset["train"]["translation"][target_key]
-
-            for source_text, target_text in zip(source_texts, target_texts):
-                splits[split].append((source_text, target_text))
+            for sample in dataset["train"]["translation"]:
+                splits[split].append((sample[source_key], sample[target_key]))
 
     return splits
 

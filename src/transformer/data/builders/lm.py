@@ -7,7 +7,7 @@ def load_tiny_shakespeare() -> dict:
 
     splits = {
         "train": dataset["train"]["text"][0],
-        "valid": dataset["valid"]["text"][0]
+        "valid": dataset["validation"]["text"][0]
     }
 
     return splits

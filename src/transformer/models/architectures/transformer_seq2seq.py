@@ -28,10 +28,12 @@ class TransformerSeq2Seq(nn.Module):
             num_decoder_layers: int,
             dropout: float,
             vocab_size: int,
+            context_length: int
     ):
         super().__init__()
 
         self.d_model = d_model
+        self.context_length = context_length
 
         # ----------
         # Embedding Table
@@ -98,7 +100,6 @@ class TransformerSeq2Seq(nn.Module):
         self, 
         source: torch.Tensor,
         special_ids: dict,
-        block_size: int,
         max_tokens: int
     ) -> torch.Tensor:
         """
@@ -149,7 +150,7 @@ class TransformerSeq2Seq(nn.Module):
             # ----------
             # Get token / absolute positional embeddings
             # ----------
-            context_ids = output_ids[:, -block_size:]
+            context_ids = output_ids[:, -self.context_length:]
             context_emb = self.token_embeddings(context_ids)
 
             start_pos = output_ids.shape[1] - context_ids.shape[1]

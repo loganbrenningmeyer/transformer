@@ -65,27 +65,33 @@ def main():
     # Load dataset training splits
     # ----------
     splits = LM_BUILDERS[config.data.dataset]()
-    train_text, valid_text = splits["train"], splits["valid"]
 
     # ----------
     # Initialize BPEModel / build vocab on train 
     # ----------
-    vocab_size = config.data.vocab_size
-    vocab_path = os.path.join(train_dir, "vocab.json")
+    vocab_size = config.tokenizer.vocab_size
+    vocab_path = config.tokenizer.vocab_path
 
     bpe = BPEModel(vocab_size)
 
-    bpe.build_vocab([train_text])
-    bpe.save(vocab_path)
+    if vocab_path is not None:
+        bpe.load(vocab_path)
+    else:
+        bpe.build_vocab([splits["train"]])
+        
+    bpe.save(os.path.join(train_dir, "vocab.json"))
 
     # ----------
     # Create LMDatasets / DataLoaders
     # ----------
-    train_dataset = LMDataset(train_text, bpe, config.data.block_size)
-    valid_dataset = LMDataset(valid_text, bpe, config.data.block_size)
+    context_length = config.data.context_length
+    batch_size = config.data.batch_size
 
-    train_loader = DataLoader(train_dataset, config.data.batch_size, shuffle=True)
-    valid_loader = DataLoader(valid_dataset, config.data.batch_size, shuffle=False)
+    train_dataset = LMDataset(splits["train"], bpe, context_length)
+    valid_dataset = LMDataset(splits["valid"], bpe, context_length)
+
+    train_loader = DataLoader(train_dataset, batch_size, shuffle=True)
+    valid_loader = DataLoader(valid_dataset, batch_size, shuffle=False)
 
     # ----------
     # Initialize TransformerLM model
@@ -97,7 +103,8 @@ def main():
         num_heads=config.model.num_heads,
         num_decoder_layers=config.model.num_decoder_layers,
         dropout=config.model.dropout,
-        vocab_size=vocab_size
+        vocab_size=vocab_size,
+        context_length=config.data.context_length
     )
     model.to(device)
 

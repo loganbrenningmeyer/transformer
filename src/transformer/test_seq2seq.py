@@ -6,6 +6,7 @@ import torch
 from omegaconf import OmegaConf, DictConfig
 
 from transformer.data.datasets import Seq2SeqDataset
+from transformer.data.registry import SEQ2SEQ_BUILDERS
 from transformer.tokenization.bpe.model import BPEModel
 from transformer.models.architectures.transformer_seq2seq import TransformerSeq2Seq
 
@@ -45,18 +46,21 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # ----------
-    # Load Seq2SeqDataset w/ training vocab
+    # Load vocab
     # ----------
-    vocab_size = train_config.data.vocab_size
+    vocab_size = train_config.tokenizer.vocab_size
     vocab_path = os.path.join(train_dir, "vocab.json")
     
     bpe = BPEModel(vocab_size)
+    bpe.load(vocab_path)
 
-    dataset = Seq2SeqDataset(
-        bpe=bpe,
-        data_config=train_config.data,
-        vocab_path=vocab_path
-    )
+    # ----------
+    # Load Seq2SeqDataset
+    # ----------
+    splits = SEQ2SEQ_BUILDERS[train_config.data.dataset](train_config.data)
+    context_length = train_config.data.context_length
+
+    dataset = Seq2SeqDataset(splits["valid"], bpe, context_length)
 
     # ----------
     # Load TransformerSeq2Seq Model
@@ -67,7 +71,8 @@ def main():
         num_encoder_layers=train_config.model.num_encoder_layers,
         num_decoder_layers=train_config.model.num_decoder_layers,
         dropout=train_config.model.dropout,
-        vocab_size=vocab_size
+        vocab_size=vocab_size,
+        context_length=context_length
     )
 
     ckpt_path = os.path.join(train_dir, "checkpoints", test_config.run.checkpoint)
@@ -95,14 +100,13 @@ def main():
     output_ids = model.generate(
         source=source, 
         special_ids=bpe.special_ids, 
-        block_size=train_config.data.block_size,
         max_tokens=test_config.sampling.max_tokens
     )
 
     for i in range(len(output_ids)):
-        source_text = bpe.ids_to_string(source[i].detach().cpu().tolist())
-        output_text = bpe.ids_to_string(output_ids[i].detach().cpu().tolist())
-        target_text = bpe.ids_to_string(target[i].detach().cpu().tolist())
+        source_text = bpe.decode(source[i].detach().cpu().tolist())
+        output_text = bpe.decode(output_ids[i].detach().cpu().tolist())
+        target_text = bpe.decode(target[i].detach().cpu().tolist())
         samples["source"].append(source_text)
         samples["output"].append(output_text)
         samples["target"].append(target_text)

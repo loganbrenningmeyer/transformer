@@ -27,8 +27,9 @@ class TrainerSeq2Seq:
             model: TransformerSeq2Seq,
             bpe: BPEModel,
             optimizer: Optimizer,
-            train_loader: DataLoader,
             device: torch.device,
+            train_loader: DataLoader,
+            valid_loader: DataLoader,
             train_dir: str,
             logging_config: DictConfig,
             sample_config: DictConfig
@@ -37,15 +38,17 @@ class TrainerSeq2Seq:
         self.bpe = bpe
         self.optimizer = optimizer
         self.train_loader = train_loader
+        self.valid_loader = valid_loader
         self.device = device
         self.train_dir = train_dir
 
         # -- Logging parameters
         self.wandb_enabled = logging_config.wandb.enable
         self.wandb_save_ckpt = logging_config.wandb.save_ckpt
-        self.loss_interval = logging_config.loss_interval
-        self.ckpt_interval = logging_config.ckpt_interval
-        self.sample_interval = logging_config.sample_interval
+        self.loss_steps = logging_config.loss_steps
+        self.valid_steps = logging_config.valid_steps
+        self.ckpt_steps = logging_config.ckpt_steps
+        self.sample_steps = logging_config.sample_steps
 
         # -- Sampling parameters
         self.num_samples = sample_config.num_samples
@@ -62,12 +65,12 @@ class TrainerSeq2Seq:
         Returns:
         
         """
+        self.model.train()
+
         step = 1
         epoch = 1
 
         while step <= steps:
-            self.model.train()
-
             # ----------
             # Run training epoch
             # ----------
@@ -79,9 +82,19 @@ class TrainerSeq2Seq:
                 loss = self.train_step(source, target)
 
                 # ----------
-                # Log loss / save checkpoint 
+                # Log loss / samples
                 # ----------
-                self.log_and_save(loss.item(), step)
+                self.log_train_step(loss.item(), step)
+
+                if step > 0 and step % self.ckpt_steps == 0:
+                    self.save_checkpoint(step)
+
+                # ----------
+                # Test validation
+                # ----------
+                if step > 0 and step % self.valid_steps == 0:
+                    valid_loss = self.validate()
+                    self.log_loss(valid_loss, step, "valid")
 
                 step += 1
             
@@ -99,6 +112,7 @@ class TrainerSeq2Seq:
         Returns:
         
         """
+        self.model.train()
         self.optimizer.zero_grad()
 
         # ----------
@@ -126,6 +140,48 @@ class TrainerSeq2Seq:
         self.optimizer.step()
 
         return loss
+    
+    @torch.no_grad()
+    def validate(self):
+        """
+        
+        """
+        self.model.eval()
+
+        valid_loss = 0.0
+        num_batches = 0
+
+        for source, target in tqdm(self.valid_loader, desc="Validation"):
+            source, target = source.to(self.device), target.to(self.device)
+
+            # ----------
+            # Separate target_in / target_out
+            # ----------
+            target_in = target[:, :-1]    # (B, T_tgt_in) : [<bos>, y_1, y_2, ..., y_T]
+            target_out = target[:, 1:]    # (B, T_tgt_out): [y_1, y_2, ..., y_T, <eos>]
+
+            # ----------
+            # Define Encoder/Decoder padding masks 
+            # ----------
+            enc_pad_mask = (source == self.bpe.pad_id)
+            dec_pad_mask = (target_in == self.bpe.pad_id)
+
+            # ----------
+            # Forward pass
+            # ----------
+            logits = self.model(source, target_in, enc_pad_mask, dec_pad_mask)      # (B, T_tgt_in, V)
+
+            # ----------
+            # Compute loss / update
+            # ----------
+            loss = self.compute_loss(logits, target_out)
+
+            valid_loss += loss.item()
+            num_batches += 1
+
+        valid_loss /= num_batches
+
+        return valid_loss
 
     def compute_loss(self, logits: torch.Tensor, target: torch.Tensor):
         """
@@ -140,34 +196,29 @@ class TrainerSeq2Seq:
 
         return F.cross_entropy(logits, target, ignore_index=self.bpe.pad_id)
 
-    def log_and_save(self, loss: float, step: int):
+    def log_train_step(self, loss: float, step: int):
         """
-        
+        Logs batch loss, logs/saves samples, and saves checkpoint 
+        if at the specified step count
         """
         # ----------
         # Log step loss
         # ----------
-        if step > 0 and step % self.loss_interval == 0:
-            self.log_loss(loss, step)
+        if step > 0 and step % self.loss_steps == 0:
+            self.log_loss(loss, step, "train")
 
         # ----------
-        # Generate / log samples
+        # Generate / log sample
         # ----------
-        if step > 0 and step % self.sample_interval == 0:
-            self.log_samples(step)
+        if step > 0 and step % self.sample_steps == 0:
+            self.log_sample(step)
 
-        # ----------
-        # Save checkpoint
-        # ----------
-        if step > 0 and step % self.ckpt_interval == 0:
-            self.save_and_log_checkpoint(step)
-
-    def log_loss(self, loss: float, step: int):
+    def log_loss(self, loss: float, step: int, label: str):
         """
         Logs loss to wandb dashboard
         """
         if self.wandb_enabled:
-            wandb.log({"loss": loss}, step=step)
+            wandb.log({f"{label} loss": loss}, step=step)
 
     def log_samples(self, step: int):
         """
@@ -218,7 +269,7 @@ class TrainerSeq2Seq:
         with open(save_path, 'w') as f:
             json.dump(self.samples, f, indent=4)
 
-    def save_and_log_checkpoint(self, step: int):
+    def save_checkpoint(self, step: int):
         """
         Saves model checkpoint at ckpt_path and logs artifact to wandb
         """
