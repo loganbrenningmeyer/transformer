@@ -229,7 +229,7 @@ class TrainerSeq2Seq:
         # ----------
         # Randomly sample source inputs / target outputs
         # ----------
-        dataset = self.train_loader.dataset
+        dataset = self.valid_loader.dataset
         idxs = torch.randint(len(dataset), (self.num_samples,))
         batch = [dataset[i] for i in idxs]
 
