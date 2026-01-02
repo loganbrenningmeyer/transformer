@@ -211,7 +211,7 @@ class TrainerSeq2Seq:
         # Generate / log sample
         # ----------
         if step > 0 and step % self.sample_steps == 0:
-            self.log_sample(step)
+            self.log_samples(step)
 
     def log_loss(self, loss: float, step: int, label: str):
         """
@@ -224,7 +224,6 @@ class TrainerSeq2Seq:
         """
         
         """
-        block_size = self.train_loader.dataset.block_size
         max_tokens = self.max_tokens
         
         # ----------
@@ -243,7 +242,7 @@ class TrainerSeq2Seq:
         # ----------
         self.samples[step] = {"source": [], "output": [], "target": []}
 
-        output_ids = self.model.generate(source, self.bpe.special_ids, block_size, max_tokens)
+        output_ids = self.model.generate(source, self.bpe.special_ids, max_tokens)
 
         for i in range(len(output_ids)):
             source_text = self.bpe.decode(source[i].detach().cpu().tolist())
