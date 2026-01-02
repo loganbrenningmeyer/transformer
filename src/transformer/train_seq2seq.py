@@ -5,9 +5,9 @@ from torch.utils.data import DataLoader
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.utils.tokenizer import BPEModel
+from transformer.tokenization.bpe.model import BPEModel
 from transformer.data.datasets import Seq2SeqDataset
-from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
+from transformer.models.architectures.transformer_seq2seq import TransformerSeq2Seq
 from transformer.training.trainer_seq2seq import TrainerSeq2Seq
 
 

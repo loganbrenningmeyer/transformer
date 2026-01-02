@@ -6,8 +6,8 @@ import torch
 from omegaconf import OmegaConf, DictConfig
 
 from transformer.data.datasets import Seq2SeqDataset
-from transformer.utils.tokenizer import BPEModel
-from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
+from transformer.tokenization.bpe.model import BPEModel
+from transformer.models.architectures.transformer_seq2seq import TransformerSeq2Seq
 
 
 def load_config(config_path: str) -> DictConfig:

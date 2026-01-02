@@ -1,10 +1,9 @@
 import torch
 import torch.nn as nn
 
-from transformer.utils.tokenizer import BPEModel
-from transformer.models.encoder import Encoder
-from transformer.models.decoder import Decoder
-from transformer.utils.position import sinusoidal_encoding
+from transformer.models.blocks.encoder import Encoder
+from transformer.models.blocks.decoder import Decoder
+from transformer.models.embeddings.position import sinusoidal_embedding
 
 
 class TransformerSeq2Seq(nn.Module):
@@ -69,8 +68,8 @@ class TransformerSeq2Seq(nn.Module):
         source_idx = torch.arange(source.shape[1], device=source.device)
         target_idx = torch.arange(target.shape[1], device=target.device)
 
-        source_pos_emb = sinusoidal_encoding(source_idx, self.d_model)
-        target_pos_emb = sinusoidal_encoding(target_idx, self.d_model)
+        source_pos_emb = sinusoidal_embedding(source_idx, self.d_model)
+        target_pos_emb = sinusoidal_embedding(target_idx, self.d_model)
 
         source_emb = source_emb + source_pos_emb
         target_emb = target_emb + target_pos_emb
@@ -128,7 +127,7 @@ class TransformerSeq2Seq(nn.Module):
         source_emb = self.token_embeddings(source)  
 
         source_idx = torch.arange(source.shape[1], device=device)
-        source_emb += sinusoidal_encoding(source_idx, self.d_model)     # (B, T_src, d_model)
+        source_emb += sinusoidal_embedding(source_idx, self.d_model)     # (B, T_src, d_model)
 
         # ----------
         # Create padding mask / compute Encoder memory 
@@ -156,7 +155,7 @@ class TransformerSeq2Seq(nn.Module):
             start_pos = output_ids.shape[1] - context_ids.shape[1]
             context_idx = start_pos + torch.arange(context_ids.shape[1], device=device)
 
-            context_emb += sinusoidal_encoding(context_idx, self.d_model)
+            context_emb += sinusoidal_embedding(context_idx, self.d_model)
 
             # ----------
             # Pass through Decoder w/ padding mask

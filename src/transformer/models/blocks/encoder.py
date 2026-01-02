@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from transformer.models.attention import SelfAttention
-from transformer.models.ffn import FeedForwardNetwork
+from transformer.models.layers.attention import SelfAttention
+from transformer.models.layers.ffn import FeedForwardNetwork
 
 
 class EncoderBlock(nn.Module):

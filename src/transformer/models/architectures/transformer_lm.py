@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from transformer.models.decoder import Decoder
-from transformer.utils.position import sinusoidal_encoding
+from transformer.models.blocks.decoder import Decoder
+from transformer.models.embeddings.position import sinusoidal_embedding
 
 
 class TransformerLM(nn.Module):
@@ -45,7 +45,7 @@ class TransformerLM(nn.Module):
         x_emb = self.token_embeddings(x)
 
         x_idx = torch.arange(x.shape[1], device=x.device)
-        x_emb += sinusoidal_encoding(x_idx, self.d_model)
+        x_emb += sinusoidal_embedding(x_idx, self.d_model)
 
         # ----------
         # Decoder / Output Projection

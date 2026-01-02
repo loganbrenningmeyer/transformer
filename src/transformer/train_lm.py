@@ -4,9 +4,9 @@ import torch
 import wandb
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.utils.tokenizer import BPEModel
+from transformer.tokenization.bpe.model import BPEModel
 from transformer.data.datasets import LMDataset
-from transformer.models.lm.transformer_lm import TransformerLM
+from transformer.models.architectures.transformer_lm import TransformerLM
 from transformer.training.trainer_lm import TrainerLM
 
 

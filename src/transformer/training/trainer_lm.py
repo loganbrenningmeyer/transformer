@@ -7,8 +7,8 @@ from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPEModel
-from transformer.models.lm.transformer_lm import TransformerLM
+from transformer.tokenization.bpe.model import BPEModel
+from transformer.models.architectures.transformer_lm import TransformerLM
 from transformer.data.datasets import LMDataset
 
 

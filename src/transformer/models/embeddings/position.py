@@ -2,16 +2,16 @@ import math
 import torch
 
 
-def sinusoidal_encoding(p: torch.Tensor, d_model: int) -> torch.Tensor:
+def sinusoidal_embedding(p: torch.Tensor, d_model: int) -> torch.Tensor:
     """
-    Computes sinusoidal positional encodings for sequence positions p with d_model encoding dimensionality.
+    Computes sinusoidal positional embedding for sequence positions p with d_model encoding dimensionality.
     
     Args:
         p (Tensor): Tensor of shape (B,) containing integer positions
         d_model (int): Dimensionality of the positional encoding
     
     Returns:
-        pos_enc (Tensor): Tensor of shape (B, dim) containing sinusoidal positional encodings
+        pos_enc (Tensor): Tensor of shape (B, dim) containing sinusoidal positional embeddings
     """
     half_dim = d_model // 2
 

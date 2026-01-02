@@ -4,8 +4,8 @@ import argparse
 import torch
 from omegaconf import OmegaConf, DictConfig
 
-from transformer.utils.tokenizer import BPEModel
-from transformer.models.lm.transformer_lm import TransformerLM
+from transformer.tokenization.bpe.model import BPEModel
+from transformer.models.architectures.transformer_lm import TransformerLM
 
 
 def load_config(config_path: str) -> DictConfig:

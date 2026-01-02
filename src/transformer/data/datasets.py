@@ -4,7 +4,7 @@ from torch.utils.data import Dataset
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPEModel
+from transformer.tokenization.bpe.model import BPEModel
 
 
 class Seq2SeqDataset(Dataset):

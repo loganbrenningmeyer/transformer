@@ -8,8 +8,8 @@ from torch.optim import Optimizer
 from omegaconf import DictConfig
 from tqdm import tqdm
 
-from transformer.utils.tokenizer import BPEModel
-from transformer.models.seq2seq.transformer_seq2seq import TransformerSeq2Seq
+from transformer.tokenization.bpe.model import BPEModel
+from transformer.models.architectures.transformer_seq2seq import TransformerSeq2Seq
 
 
 class TrainerSeq2Seq:
